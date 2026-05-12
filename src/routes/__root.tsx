@@ -72,14 +72,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Gamma Terminal" },
+      { name: "description", content: "Gamma Terminal is a financial data terminal providing real-time market information and trading tools." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Gamma Terminal" },
+      { property: "og:description", content: "Gamma Terminal is a financial data terminal providing real-time market information and trading tools." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Gamma Terminal" },
+      { name: "twitter:description", content: "Gamma Terminal is a financial data terminal providing real-time market information and trading tools." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a9c1428b-ab20-443b-bc86-810c39f8c7a3/id-preview-e31e28a4--0e4e5ea9-277e-4c3b-8544-c05c678f2a94.lovable.app-1778561769292.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a9c1428b-ab20-443b-bc86-810c39f8c7a3/id-preview-e31e28a4--0e4e5ea9-277e-4c3b-8544-c05c678f2a94.lovable.app-1778561769292.png" },
     ],
     links: [
       {
