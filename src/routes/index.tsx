@@ -1,26 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { lazy, Suspense } from "react";
+
+const TerminalApp = lazy(() => import("@/TerminalApp"));
 
 export const Route = createFileRoute("/")({
   component: Index,
+  ssr: false,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
-
 function Index() {
-  return <PlaceholderIndex />;
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen flex items-center justify-center bg-black text-amber-400 font-mono text-sm tracking-widest">
+          LOADING GAMMA TERMINAL…
+        </div>
+      }
+    >
+      <TerminalApp />
+    </Suspense>
+  );
 }
