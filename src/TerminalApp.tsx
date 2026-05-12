@@ -123,12 +123,18 @@ export default function TerminalApp() {
   }, [tabs, activeTabId, setActiveTab]);
 
   return (
-    <div className="h-screen flex flex-col bg-black text-amber-400 font-mono">
-      <div className="flex items-center px-4 py-2 border-b border-orange-900/50 bg-gradient-to-r from-orange-950/50 to-black">
-        <span className="text-amber-400 font-bold tracking-[0.3em] text-sm">GAMMA TERMINAL</span>
+    <div className="h-screen flex flex-col bg-background text-foreground font-sans">
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-border bg-[#11161f]">
+        <div className="h-2 w-2 rounded-sm bg-bb-orange" />
+        <span className="text-foreground font-semibold tracking-[0.18em] text-[11px]">
+          GAMMA <span className="text-bb-orange">TERMINAL</span>
+        </span>
+        <span className="ml-3 text-[10px] uppercase tracking-wider text-muted-foreground">
+          Professional · Markets · Intelligence
+        </span>
       </div>
       <WorkspaceTabs />
-      <div className="flex-1 min-h-0 overflow-auto bg-terminal-grid relative">
+      <div className="flex-1 min-h-0 overflow-auto relative">
         <ActiveView />
         <CommandPalette />
       </div>
