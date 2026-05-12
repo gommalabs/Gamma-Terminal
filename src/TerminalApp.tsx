@@ -52,7 +52,7 @@ function ActiveView() {
     case "SCORECARD":
       return symbol ? <SCORECARD symbol={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
     case "DES":
-      return symbol ? <DES symbol={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
+      return symbol ? <DES security={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
     case "MOV":
       return <MOV />;
     case "WEI":
