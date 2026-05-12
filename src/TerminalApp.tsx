@@ -9,7 +9,7 @@ import SettingsPage from "@/components/SettingsPage";
 import NewsPage from "@/components/NewsPage";
 import { SCORECARD } from "@/functions/SCORECARD";
 import { CC } from "@/functions/CC";
-import { DES } from "@/functions/DES";
+import DES from "@/functions/DES";
 import { MOV } from "@/functions/MOV";
 import { WEI } from "@/functions/WEI";
 import { OMON } from "@/functions/OMON";
