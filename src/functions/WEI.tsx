@@ -4,22 +4,42 @@ import { fmtPrice, fmtPct } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 const INDICES = [
+  // Americas
   { sym: "^GSPC",   name: "S&P 500",       region: "Americas" },
   { sym: "^DJI",    name: "Dow Jones",     region: "Americas" },
   { sym: "^IXIC",   name: "NASDAQ Comp",   region: "Americas" },
   { sym: "^RUT",    name: "Russell 2000",  region: "Americas" },
   { sym: "^GSPTSE", name: "TSX Comp",      region: "Americas" },
   { sym: "^BVSP",   name: "Bovespa",       region: "Americas" },
-  { sym: "^FTSE",   name: "FTSE 100",      region: "EMEA" },
-  { sym: "^GDAXI",  name: "DAX",           region: "EMEA" },
-  { sym: "^FCHI",   name: "CAC 40",        region: "EMEA" },
-  { sym: "^STOXX50E", name: "Euro Stoxx 50", region: "EMEA" },
-  { sym: "^IBEX",   name: "IBEX 35",       region: "EMEA" },
+  { sym: "^MXX",    name: "IPC Mexico",    region: "Americas" },
+  { sym: "^MERV",   name: "Merval",        region: "Americas" },
+  
+  // Europe
+  { sym: "^FTSE",   name: "FTSE 100",      region: "Europe" },
+  { sym: "^GDAXI",  name: "DAX",           region: "Europe" },
+  { sym: "^FCHI",   name: "CAC 40",        region: "Europe" },
+  { sym: "^STOXX50E", name: "Euro Stoxx 50", region: "Europe" },
+  { sym: "^IBEX",   name: "IBEX 35",       region: "Europe" },
+  { sym: "^FTMIB",  name: "FTSE MIB",      region: "Europe" },
+  { sym: "^AEX",    name: "AEX",           region: "Europe" },
+  { sym: "^SSMI",   name: "SMI",           region: "Europe" },
+  { sym: "^OMXC25", name: "OMX Copenhagen", region: "Europe" },
+  { sym: "^OSEAX",  name: "OSE All-Share", region: "Europe" },
+  
+  // Asia-Pacific
   { sym: "^N225",   name: "Nikkei 225",    region: "Asia-Pac" },
   { sym: "^HSI",    name: "Hang Seng",     region: "Asia-Pac" },
   { sym: "^AXJO",   name: "ASX 200",       region: "Asia-Pac" },
   { sym: "^KS11",   name: "KOSPI",         region: "Asia-Pac" },
   { sym: "^TWII",   name: "TAIEX",         region: "Asia-Pac" },
+  { sym: "^SSEC",   name: "Shanghai Comp", region: "Asia-Pac" },
+  { sym: "^SZSC",   name: "Shenzhen Comp", region: "Asia-Pac" },
+  { sym: "^NSEI",   name: "NIFTY 50",      region: "Asia-Pac" },
+  { sym: "^BSESN",  name: "SENSEX",        region: "Asia-Pac" },
+  { sym: "^JKSE",   name: "JCI",           region: "Asia-Pac" },
+  { sym: "^KLSE",   name: "FTSE Bursa",    region: "Asia-Pac" },
+  { sym: "^SET",    name: "SET Index",     region: "Asia-Pac" },
+  { sym: "^NZ50",   name: "NZX 50",        region: "Asia-Pac" },
 ];
 
 export function WEI() {

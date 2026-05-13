@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchHistorical } from "@/lib/api";
 import { fmtPrice, fmtDate, fmtTime } from "@/lib/format";
@@ -39,7 +39,12 @@ export function GP({ symbol }: { symbol: string }) {
   const [drawingTool, setDrawingTool] = useState<"none" | "line" | "horizontal">("none");
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingStart, setDrawingStart] = useState<{ x: number; y: number } | null>(null);
+  
+  // Zoom and pan state
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 100 }); // percentage of data visible
+  const [priceZoom, setPriceZoom] = useState(1); // 1 = auto, >1 = zoomed in
   const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const { data = [], isLoading, error } = useQuery({
     queryKey: ["chart", symbol, interval],
@@ -72,27 +77,64 @@ export function GP({ symbol }: { symbol: string }) {
     };
   }, [sorted]);
   
+  // Get visible data based on zoom/pan
+  const visibleData = useMemo(() => {
+    if (sorted.length === 0) return [];
+    const startIdx = Math.floor((visibleRange.start / 100) * sorted.length);
+    const endIdx = Math.ceil((visibleRange.end / 100) * sorted.length);
+    return sorted.slice(startIdx, endIdx);
+  }, [sorted, visibleRange]);
+  
   // Chart dimensions and scaling
-  const width = 1200;
-  const height = 600;
+  const width = 1600;
+  const height = 900;
   const padding = { top: 20, right: 70, bottom: 40, left: 10 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
-  const volumeHeight = showVolume ? 80 : 0;
+  const volumeHeight = showVolume ? 100 : 0;
   const mainChartHeight = chartHeight - volumeHeight;
   
-  const prices = sorted.map(d => d.close);
-  const minPrice = Math.min(...prices) * 0.998;
-  const maxPrice = Math.max(...prices) * 1.002;
+  const prices = visibleData.map(d => d.close);
+  const minPrice = Math.min(...prices) * (1 - 0.002 * priceZoom);
+  const maxPrice = Math.max(...prices) * (1 + 0.002 * priceZoom);
   const priceRange = maxPrice - minPrice || 1;
   
-  const volumes = sorted.map(d => d.volume);
+  const volumes = visibleData.map(d => d.volume);
   const maxVolume = Math.max(...volumes) || 1;
   
   // Coordinate conversion functions
-  const getX = (index: number) => padding.left + (index / Math.max(sorted.length - 1, 1)) * chartWidth;
+  const getX = (index: number) => padding.left + (index / Math.max(visibleData.length - 1, 1)) * chartWidth;
   const getY = (price: number) => padding.top + mainChartHeight - ((price - minPrice) / priceRange) * mainChartHeight;
   const getVolumeY = (vol: number) => height - padding.bottom - (vol / maxVolume) * volumeHeight;
+  
+  // Mouse wheel handler for zoom
+  const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
+    e.preventDefault();
+    
+    if (e.ctrlKey || e.metaKey) {
+      // Price zoom
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      setPriceZoom(prev => Math.max(0.5, Math.min(10, prev * delta)));
+    } else {
+      // Horizontal pan/zoom
+      const rangeSize = visibleRange.end - visibleRange.start;
+      const delta = e.deltaY > 0 ? 0.95 : 1.05;
+      
+      if (e.shiftKey) {
+        // Zoom
+        const newRange = rangeSize * delta;
+        const center = (visibleRange.start + visibleRange.end) / 2;
+        const newStart = Math.max(0, center - newRange / 2);
+        const newEnd = Math.min(100, center + newRange / 2);
+        setVisibleRange({ start: newStart, end: newEnd });
+      } else {
+        // Pan
+        const panAmount = (e.deltaY / 1000) * 100;
+        const newStart = Math.max(0, Math.min(100 - rangeSize, visibleRange.start + panAmount));
+        setVisibleRange({ start: newStart, end: newStart + rangeSize });
+      }
+    }
+  };
   
   // Mouse interaction handlers for drawing
   const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
@@ -149,18 +191,18 @@ export function GP({ symbol }: { symbol: string }) {
     );
   }
 
-  const lastCandle = sorted[sorted.length - 1];
-  const isUp = lastCandle.close >= sorted[0].close;
+  const lastCandle = visibleData[visibleData.length - 1] || sorted[sorted.length - 1];
+  const isUp = lastCandle.close >= (visibleData[0]?.close || sorted[0].close);
 
   return (
-    <div className="h-full flex flex-col bg-term-black">
+    <div ref={containerRef} className="h-full flex flex-col bg-term-black">
       {/* Header */}
       <div className="flex items-center justify-between h-8 px-3 border-b border-term-border-strong bg-term-panel">
         <div className="flex items-center gap-4">
           <span className="text-term-amber font-bold text-[10px] uppercase tracking-wider">{symbol} CHART</span>
           <span className="text-term-textDim text-[9px] num">${lastCandle.close.toFixed(2)}</span>
           <span className={cn("text-[9px] num", isUp ? "text-term-green" : "text-term-red")}>
-            {isUp ? "▲" : "▼"} {Math.abs(((lastCandle.close - sorted[0].close) / sorted[0].close) * 100).toFixed(2)}%
+            {isUp ? "▲" : "▼"} {Math.abs(((lastCandle.close - (visibleData[0]?.close || sorted[0].close)) / (visibleData[0]?.close || sorted[0].close)) * 100).toFixed(2)}%
           </span>
         </div>
         
@@ -270,10 +312,11 @@ export function GP({ symbol }: { symbol: string }) {
             />
             <span className="text-term-textDim">MA50</span>
           </label>
+          <span className="text-term-textDim ml-2">Scroll: Pan | Shift+Scroll: Zoom | Ctrl+Scroll: Price Zoom</span>
         </div>
       </div>
 
-      {/* Chart Area */}
+      {/* Chart Area - Fullscreen */}
       <div className="flex-1 relative overflow-hidden">
         <svg
           ref={svgRef}
@@ -282,6 +325,7 @@ export function GP({ symbol }: { symbol: string }) {
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
+          onWheel={handleWheel}
         >
           {/* Grid lines */}
           {[0, 0.25, 0.5, 0.75, 1].map((pct) => {
@@ -312,14 +356,14 @@ export function GP({ symbol }: { symbol: string }) {
           })}
           
           {/* Candlesticks or Line Chart */}
-          {chartType === "candle" && sorted.map((d, i) => {
+          {chartType === "candle" && visibleData.map((d, i) => {
             const x = getX(i);
             const yOpen = getY(d.open);
             const yClose = getY(d.close);
             const yHigh = getY(d.high);
             const yLow = getY(d.low);
             const candleUp = d.close >= d.open;
-            const candleWidth = Math.max(2, chartWidth / sorted.length * 0.6);
+            const candleWidth = Math.max(2, chartWidth / visibleData.length * 0.6);
             
             return (
               <g key={d.date}>
@@ -348,7 +392,7 @@ export function GP({ symbol }: { symbol: string }) {
           
           {chartType === "line" && (
             <polyline
-              points={sorted.map((d, i) => `${getX(i)},${getY(d.close)}`).join(" ")}
+              points={visibleData.map((d, i) => `${getX(i)},${getY(d.close)}`).join(" ")}
               fill="none"
               stroke={isUp ? "#00ff41" : "#ff073a"}
               strokeWidth="2"
@@ -358,7 +402,7 @@ export function GP({ symbol }: { symbol: string }) {
           {/* Moving Averages */}
           {showMA.ma20 && (
             <polyline
-              points={maData.ma20.filter(p => p !== null).map((p, idx) => `${getX(idx + 19)},${getY(p!.y)}`).join(" ")}
+              points={maData.ma20.filter((p, idx) => p !== null && idx >= visibleRange.start/100 * sorted.length && idx <= visibleRange.end/100 * sorted.length).map((p, idx) => `${getX(idx)},${getY(p!.y)}`).join(" ")}
               fill="none"
               stroke="#00bfff"
               strokeWidth="1.5"
@@ -367,7 +411,7 @@ export function GP({ symbol }: { symbol: string }) {
           )}
           {showMA.ma50 && (
             <polyline
-              points={maData.ma50.filter(p => p !== null).map((p, idx) => `${getX(idx + 49)},${getY(p!.y)}`).join(" ")}
+              points={maData.ma50.filter((p, idx) => p !== null && idx >= visibleRange.start/100 * sorted.length && idx <= visibleRange.end/100 * sorted.length).map((p, idx) => `${getX(idx)},${getY(p!.y)}`).join(" ")}
               fill="none"
               stroke="#ff69b4"
               strokeWidth="1.5"
@@ -376,7 +420,7 @@ export function GP({ symbol }: { symbol: string }) {
           )}
           
           {/* Volume bars */}
-          {showVolume && sorted.map((d, i) => {
+          {showVolume && visibleData.map((d, i) => {
             const x = getX(i);
             const barHeight = (d.volume / maxVolume) * volumeHeight;
             const candleUp = d.close >= d.open;
@@ -422,7 +466,7 @@ export function GP({ symbol }: { symbol: string }) {
           
           {/* Date labels */}
           {[0, 0.25, 0.5, 0.75, 1].map((pct) => {
-            const idx = Math.floor(pct * (sorted.length - 1));
+            const idx = Math.floor(pct * (visibleData.length - 1));
             const x = getX(idx);
             return (
               <text
@@ -434,7 +478,7 @@ export function GP({ symbol }: { symbol: string }) {
                 fontSize="9"
                 fontFamily="monospace"
               >
-                {fmtDate(sorted[idx]?.date)}
+                {fmtDate(visibleData[idx]?.date)}
               </text>
             );
           })}
@@ -446,6 +490,11 @@ export function GP({ symbol }: { symbol: string }) {
             ${lastCandle.close.toFixed(2)}
           </div>
         </div>
+        
+        {/* Zoom level indicator */}
+        <div className="absolute top-2 left-2 text-[9px] bg-black/80 px-2 py-1 border border-term-border text-term-textDim">
+          Zoom: {(visibleRange.end - visibleRange.start).toFixed(0)}% | Price: {priceZoom.toFixed(1)}x
+        </div>
       </div>
 
       {/* Stats footer */}
@@ -455,10 +504,10 @@ export function GP({ symbol }: { symbol: string }) {
           <span>H: <span className="num text-term-green">${maxPrice.toFixed(2)}</span></span>
           <span>L: <span className="num text-term-red">${minPrice.toFixed(2)}</span></span>
           <span>C: <span className={cn("num", isUp ? "text-term-green" : "text-term-red")}>${lastCandle.close.toFixed(2)}</span></span>
-          <span>VOL: <span className="num">{(sorted.reduce((sum, d) => sum + d.volume, 0) / 1e6).toFixed(1)}M</span></span>
+          <span>VOL: <span className="num">{(visibleData.reduce((sum, d) => sum + d.volume, 0) / 1e6).toFixed(1)}M</span></span>
         </div>
         <div className="text-term-textDim">
-          {sorted.length} CANDLES · {INTERVALS.find(i => i.value === interval)?.label} · {chartType.toUpperCase()}
+          {visibleData.length}/{sorted.length} CANDLES · {INTERVALS.find(i => i.value === interval)?.label} · {chartType.toUpperCase()}
         </div>
       </div>
     </div>

@@ -106,6 +106,7 @@ const CATEGORIES = [
 export function PREDICTION() {
   const [category, setCategory] = useState("all");
   const [sortBy, setSortBy] = useState<"volume" | "probability">("volume");
+  const [selectedMarket, setSelectedMarket] = useState<PredictionMarket | null>(null);
 
   const filtered = category === "all" 
     ? MOCK_PREDICTIONS 
@@ -193,7 +194,7 @@ export function PREDICTION() {
               const probability = market.yesPrice * 100;
               
               return (
-                <tr key={market.id} className="hover:bg-term-panel cursor-pointer transition-colors">
+                <tr key={market.id} className="hover:bg-term-panel cursor-pointer transition-colors" onClick={() => setSelectedMarket(market)}>
                   <td className="pl-3">
                     <div className="flex items-center gap-2">
                       <span className={`w-1.5 h-1.5 rounded-full ${
@@ -269,6 +270,96 @@ export function PREDICTION() {
           POLYMARKET · KALSHO · MANIFOLD · REAL-TIME ODDS
         </div>
       </div>
+
+      {/* Detail Modal */}
+      {selectedMarket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setSelectedMarket(null)}>
+          <div className="bg-term-black border-2 border-term-amber max-w-2xl w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="h-8 px-4 border-b border-term-border-strong bg-term-panel flex items-center justify-between">
+              <span className="text-term-amber font-bold text-[11px] uppercase tracking-wider">MARKET DETAILS</span>
+              <button onClick={() => setSelectedMarket(null)} className="text-term-textDim hover:text-term-amber text-lg leading-none">×</button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-6 space-y-4">
+              {/* Question */}
+              <div>
+                <div className="text-[9px] text-term-textDim uppercase tracking-widest mb-1">QUESTION</div>
+                <div className="text-term-heading text-lg font-bold">{selectedMarket.question}</div>
+                <div className="text-[10px] text-term-amber uppercase tracking-wider mt-1">{selectedMarket.category}</div>
+              </div>
+              
+              {/* Prices */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="border border-term-green/30 bg-term-green/5 p-4">
+                  <div className="text-[9px] text-term-green uppercase tracking-widest mb-2">YES PRICE</div>
+                  <div className="text-3xl num font-bold text-term-green">${selectedMarket.yesPrice.toFixed(2)}</div>
+                  <div className="text-[11px] text-term-textDim mt-1">Probability: {(selectedMarket.yesPrice * 100).toFixed(1)}%</div>
+                </div>
+                <div className="border border-term-red/30 bg-term-red/5 p-4">
+                  <div className="text-[9px] text-term-red uppercase tracking-widest mb-2">NO PRICE</div>
+                  <div className="text-3xl num font-bold text-term-red">${selectedMarket.noPrice.toFixed(2)}</div>
+                  <div className="text-[11px] text-term-textDim mt-1">Probability: {(selectedMarket.noPrice * 100).toFixed(1)}%</div>
+                </div>
+              </div>
+              
+              {/* Market Stats */}
+              <div className="grid grid-cols-3 gap-3 text-[11px]">
+                <div className="border border-term-border p-3">
+                  <div className="text-[8px] text-term-textDim uppercase tracking-widest mb-1">VOLUME</div>
+                  <div className="num text-term-amber text-lg">${(selectedMarket.volume / 1e6).toFixed(2)}M</div>
+                </div>
+                <div className="border border-term-border p-3">
+                  <div className="text-[8px] text-term-textDim uppercase tracking-widest mb-1">SPREAD</div>
+                  <div className="num text-term-text text-lg">{((selectedMarket.yesPrice + selectedMarket.noPrice - 1) * 100).toFixed(2)}%</div>
+                </div>
+                <div className="border border-term-border p-3">
+                  <div className="text-[8px] text-term-textDim uppercase tracking-widest mb-1">ENDS</div>
+                  <div className="num text-term-text text-lg">{new Date(selectedMarket.endDate).toLocaleDateString()}</div>
+                </div>
+              </div>
+              
+              {/* Probability Bar */}
+              <div>
+                <div className="text-[9px] text-term-textDim uppercase tracking-widest mb-2">MARKET PROBABILITY</div>
+                <div className="h-8 bg-term-panel2 rounded overflow-hidden relative">
+                  <div
+                    className="absolute left-0 top-0 h-full bg-gradient-to-r from-term-red via-term-amber to-term-green transition-all"
+                    style={{ width: `${selectedMarket.yesPrice * 100}%` }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center text-term-heading font-bold text-sm">
+                    {(selectedMarket.yesPrice * 100).toFixed(1)}% YES
+                  </div>
+                </div>
+              </div>
+              
+              {/* External Links */}
+              <div className="pt-4 border-t border-term-border">
+                <div className="text-[9px] text-term-textDim uppercase tracking-widest mb-2">TRADE ON</div>
+                <div className="flex gap-2">
+                  <a
+                    href={`https://polymarket.com/event/${selectedMarket.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-term-amber/10 border border-term-amber text-term-amber hover:bg-term-amber/20 text-[10px] uppercase tracking-wider"
+                  >
+                    POLYMARKET →
+                  </a>
+                  <a
+                    href={`https://manifold.markets/${selectedMarket.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-term-panel border border-term-border text-term-text hover:border-term-amber text-[10px] uppercase tracking-wider"
+                  >
+                    MANIFOLD →
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -53,7 +53,7 @@ export function MOV() {
               </tr>
             </thead>
             <tbody>
-              {data.slice(0, 100).map((m, i) => {
+              {data.map((m, i) => {
                 const dir = m.percent_change >= 0 ? "up" : "down";
                 return (
                   <tr key={m.symbol} className="cursor-pointer" onClick={() => openTab("DES", m.symbol)}>
