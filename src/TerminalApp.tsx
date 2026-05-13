@@ -23,6 +23,12 @@ import { EE } from "@/functions/EE";
 import { FXC } from "@/functions/FXC";
 import { HELP } from "@/functions/HELP";
 import { QR } from "@/functions/QR";
+import { GP } from "@/functions/GP";
+import { NI } from "@/functions/NI";
+import { RV } from "@/functions/RV";
+import { ECO } from "@/functions/ECO";
+import { PORT } from "@/functions/PORT";
+import { PREDICTION } from "@/functions/PREDICTION";
 
 function ActiveView() {
   const { tabs, activeTabId } = useWorkspace();
@@ -41,7 +47,7 @@ function ActiveView() {
   }
 
   // NEWS shows the dedicated News page
-  if (activeTab.code === "NI") {
+  if (activeTab.code === "NEWS") {
     return <NewsPage />;
   }
 
@@ -53,16 +59,8 @@ function ActiveView() {
       return symbol ? <SCORECARD symbol={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
     case "DES":
       return symbol ? <DES security={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
-    case "MOV":
-      return <MOV />;
-    case "WEI":
-      return <WEI />;
-    case "OMON":
-      return symbol ? <OMON symbol={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
-    case "CURV":
-      return <CURV />;
-    case "CRYPTO":
-      return <CRYPTO />;
+    case "GP":
+      return symbol ? <GP symbol={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
     case "HP":
       return symbol ? <HP symbol={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
     case "FA":
@@ -73,12 +71,32 @@ function ActiveView() {
       return symbol ? <DVD symbol={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
     case "EE":
       return symbol ? <EE symbol={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
-    case "FXC":
-      return <FXC />;
-    case "HELP":
-      return <HELP />;
+    case "NI":
+      return symbol ? <NI symbol={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
     case "QR":
       return symbol ? <QR symbol={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
+    case "RV":
+      return symbol ? <RV symbol={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
+    case "OMON":
+      return symbol ? <OMON symbol={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
+    case "MOV":
+      return <MOV />;
+    case "WEI":
+      return <WEI />;
+    case "CURV":
+      return <CURV />;
+    case "CRYPTO":
+      return <CRYPTO />;
+    case "FXC":
+      return <FXC />;
+    case "ECO":
+      return <ECO />;
+    case "PORT":
+      return <PORT />;
+    case "PREDICTION":
+      return <PREDICTION />;
+    case "HELP":
+      return <HELP />;
     default:
       return (
         <FunctionPanel code={activeTab.code} symbol={activeTab.symbol}>

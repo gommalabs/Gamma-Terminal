@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   fetchQuote, fetchProfile, fetchMetrics, fetchConsensus,
-  fetchNewsCompany, fetchIncome, searchSymbols,
+  fetchNewsCompany, fetchIncome, searchSymbols, fetchHistorical,
 } from "@/lib/api";
 import { fmtPrice, fmtPct, fmtVolume, fmtTime, fmtPctFromDecimal } from "@/lib/format";
 import {
@@ -16,7 +16,7 @@ import { cn } from "@/lib/cn";
 export function SCORECARD({ symbol }: { symbol: string }) {
   const openTab = useWorkspace((s) => s.openTab);
 
-  const [quoteQ, profileQ, metricsQ, consensusQ, newsQ, incomeQ] = useQueries({
+  const [quoteQ, profileQ, metricsQ, consensusQ, newsQ, incomeQ, chartQ] = useQueries({
     queries: [
       { queryKey: ["quote", symbol], queryFn: () => fetchQuote(symbol), refetchInterval: 5000 },
       { queryKey: ["profile", symbol], queryFn: () => fetchProfile(symbol) },
@@ -24,6 +24,7 @@ export function SCORECARD({ symbol }: { symbol: string }) {
       { queryKey: ["consensus", symbol], queryFn: () => fetchConsensus(symbol) },
       { queryKey: ["news", symbol], queryFn: () => fetchNewsCompany(symbol, 5) },
       { queryKey: ["income", symbol], queryFn: () => fetchIncome(symbol) },
+      { queryKey: ["chart", symbol, "3mo"], queryFn: () => fetchHistorical(symbol, { interval: "3mo" }) },
     ],
   });
 
@@ -33,6 +34,7 @@ export function SCORECARD({ symbol }: { symbol: string }) {
   const e = consensusQ.data;
   const news = newsQ.data ?? [];
   const income = incomeQ.data ?? [];
+  const chartData = chartQ.data ?? [];
 
   const chg = q?.last_price != null && q?.prev_close != null ? q.last_price - q.prev_close : undefined;
   const chgPct = q?.last_price != null && q?.prev_close != null ? ((q.last_price - q.prev_close) / q.prev_close) * 100 : undefined;
@@ -91,7 +93,7 @@ export function SCORECARD({ symbol }: { symbol: string }) {
 
   return (
     <div className="p-4 grid gap-4 text-[12px]"
-      style={{ gridTemplateColumns: "minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr)", gridTemplateRows: "auto auto 1fr" }}>
+      style={{ gridTemplateColumns: "minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr)", gridTemplateRows: "auto auto auto 1fr" }}>
       {/* Header: symbol + price */}
       <div className="col-span-3 flex items-start justify-between border-b border-term-border pb-3">
         <div>
@@ -121,6 +123,18 @@ export function SCORECARD({ symbol }: { symbol: string }) {
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-term-red" /><span className="num text-term-red">{t.bear}</span> bearish</span>
           </div>
           <div className="sub-header">RULE-BASED · NOT INVESTMENT ADVICE</div>
+        </div>
+      </div>
+
+      {/* Price Chart - 3 Month */}
+      <div className="col-span-3 panel">
+        <div className="panel-header"><span>PRICE PERFORMANCE (3M)</span></div>
+        <div className="p-3">
+          {chartData.length > 0 ? (
+            <MiniChart data={chartData} />
+          ) : (
+            <div className="h-24 flex items-center justify-center text-term-muted text-[11px]">Loading chart...</div>
+          )}
         </div>
       </div>
 
@@ -204,10 +218,11 @@ export function SCORECARD({ symbol }: { symbol: string }) {
       <div className="col-span-3 flex flex-wrap items-center gap-2 border-t border-term-border pt-2 text-[11px]">
         <span className="sub-header">DRILL DOWN:</span>
         {[
-          { c: "GP", label: "Chart" }, { c: "HP", label: "Price History" },
+          { c: "GP", label: "Advanced Chart" }, { c: "HP", label: "Price History" },
           { c: "KEY", label: "All Ratios" }, { c: "FA", label: "Financials" },
           { c: "DVD", label: "Dividends" }, { c: "EE", label: "Analyst Detail" },
           { c: "NI", label: "All News" }, { c: "OMON", label: "Options" },
+          { c: "RV", label: "Relative Valuation" }, { c: "DES", label: "Company Profile" },
         ].map((x) => (
           <button key={x.c} onClick={() => openTab(x.c as never, symbol)}
             className="px-2 py-0.5 border border-term-border hover:border-term-amber hover:text-term-amber text-term-muted tracking-wider">
@@ -313,6 +328,94 @@ function NoDataBlock({ symbol }: { symbol: string }) {
             {s}
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// Mini price chart component for SCORECARD
+function MiniChart({ data }: { data: Array<{ date: string; close: number }> }) {
+  const sorted = [...data].sort((a, b) => (a.date < b.date ? -1 : 1));
+  if (sorted.length === 0) return null;
+
+  const prices = sorted.map(d => d.close);
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const priceRange = maxPrice - minPrice || 1;
+  
+  const isUp = sorted[sorted.length - 1].close >= sorted[0].close;
+  const color = isUp ? "#00ff41" : "#ff073a";
+  
+  // Generate SVG path
+  const width = 800;
+  const height = 120;
+  const padding = 10;
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+  
+  const points = sorted.map((d, i) => {
+    const x = padding + (i / (sorted.length - 1)) * chartWidth;
+    const y = padding + chartHeight - ((d.close - minPrice) / priceRange) * chartHeight;
+    return `${x},${y}`;
+  }).join(" ");
+
+  // Area fill path
+  const areaPath = `${points} ${padding + chartWidth},${height - padding} ${padding},${height - padding}`;
+
+  return (
+    <div className="relative">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-28">
+        {/* Grid lines */}
+        {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => (
+          <line
+            key={i}
+            x1={padding}
+            y1={padding + chartHeight * ratio}
+            x2={width - padding}
+            y2={padding + chartHeight * ratio}
+            stroke="#333"
+            strokeWidth="0.5"
+            strokeDasharray="2,2"
+          />
+        ))}
+        
+        {/* Price line */}
+        <polyline
+          points={points}
+          fill="none"
+          stroke={color}
+          strokeWidth="2"
+        />
+        
+        {/* Area fill */}
+        <polygon
+          points={areaPath}
+          fill={color}
+          opacity="0.1"
+        />
+        
+        {/* Price labels */}
+        <text x={padding} y={padding - 2} fill="#999" fontSize="10" fontFamily="monospace">
+          {fmtPrice(maxPrice)}
+        </text>
+        <text x={padding} y={height - padding + 12} fill="#999" fontSize="10" fontFamily="monospace">
+          {fmtPrice(minPrice)}
+        </text>
+        
+        {/* Date labels */}
+        <text x={padding} y={height - 2} fill="#666" fontSize="9" fontFamily="monospace">
+          {sorted[0]?.date}
+        </text>
+        <text x={width - padding - 60} y={height - 2} fill="#666" fontSize="9" fontFamily="monospace">
+          {sorted[sorted.length - 1]?.date}
+        </text>
+      </svg>
+      
+      {/* Performance summary */}
+      <div className="absolute top-2 right-2 text-[10px] bg-black/80 px-2 py-1 border border-term-border">
+        <span className={isUp ? "text-term-green" : "text-term-red"}>
+          {isUp ? "▲" : "▼"} {Math.abs(((prices[prices.length - 1] - prices[0]) / prices[0]) * 100).toFixed(2)}%
+        </span>
       </div>
     </div>
   );
