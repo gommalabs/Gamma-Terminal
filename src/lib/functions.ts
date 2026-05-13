@@ -5,7 +5,7 @@ export type FunctionCode =
   | "SCORECARD" | "DES" | "GP" | "QR" | "HP" | "FA" | "KEY" | "DVD" | "EE" | "NI"
   | "RV" | "SPLC" | "EQS" | "BETA" | "OWN" | "ESG" | "EVTS" | "MA" | "IPO"
   // Markets & Indices
-  | "WEI" | "MOV" | "CRYPTO" | "FXC" | "CURV"
+  | "WEI" | "MOV" | "CRYPTO" | "FXC" | "CURV" | "SECTOR_HEATMAP"
   | "TOP" | "MOST" | "IMAP" | "WBI" | "BTMM"
   // Fixed Income
   | "YAS" | "YC" | "SWPM" | "OAS" | "DUR"
@@ -57,6 +57,7 @@ export const FUNCTIONS: FunctionDef[] = [
   { code: "MOV",  name: "Market Movers",         needsSymbol: false, group: "Markets", summary: "US gainers, losers, most active" },
   { code: "CRYPTO", name: "Crypto Monitor",      needsSymbol: false, group: "Markets", summary: "Top crypto prices + sparkline" },
   { code: "FXC",  name: "FX Cross Rates",        needsSymbol: false, group: "Markets", summary: "Major FX pairs matrix" },
+  { code: "SECTOR_HEATMAP", name: "Sector Heatmap", needsSymbol: true, group: "Markets", summary: "Interactive sector performance heatmap" },
   { code: "TOP",  name: "Global Market Overview",needsSymbol: false, group: "Markets", summary: "Real-time global market dashboard" },
   { code: "MOST", name: "Most Active",           needsSymbol: false, group: "Markets", summary: "Highest volume securities today" },
   { code: "IMAP", name: "Interactive Map",       needsSymbol: false, group: "Markets", summary: "Geographic market performance heatmap" },

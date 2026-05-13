@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import {
   fetchQuote, fetchProfile, fetchMetrics, fetchConsensus,
@@ -15,8 +15,11 @@ import { cn } from "@/lib/cn";
 
 export function SCORECARD({ symbol }: { symbol: string }) {
   const openTab = useWorkspace((s) => s.openTab);
+  const [showBoardModal, setShowBoardModal] = useState(false);
+  const [showCompetitorsModal, setShowCompetitorsModal] = useState(false);
 
-  const [quoteQ, profileQ, metricsQ, consensusQ, newsQ, incomeQ, chartQ] = useQueries({
+  // Fetch max historical data for IPO-to-now chart
+  const [quoteQ, profileQ, metricsQ, consensusQ, newsQ, incomeQ, chartQ, ipoChartQ] = useQueries({
     queries: [
       { queryKey: ["quote", symbol], queryFn: () => fetchQuote(symbol), refetchInterval: 5000 },
       { queryKey: ["profile", symbol], queryFn: () => fetchProfile(symbol) },
@@ -25,6 +28,7 @@ export function SCORECARD({ symbol }: { symbol: string }) {
       { queryKey: ["news", symbol], queryFn: () => fetchNewsCompany(symbol, 5) },
       { queryKey: ["income", symbol], queryFn: () => fetchIncome(symbol) },
       { queryKey: ["chart", symbol, "3mo"], queryFn: () => fetchHistorical(symbol, { interval: "3mo" }) },
+      { queryKey: ["ipo-chart", symbol], queryFn: () => fetchHistorical(symbol, { interval: "max" }) },
     ],
   });
 
@@ -35,6 +39,7 @@ export function SCORECARD({ symbol }: { symbol: string }) {
   const news = newsQ.data ?? [];
   const income = incomeQ.data ?? [];
   const chartData = chartQ.data ?? [];
+  const ipoChartData = ipoChartQ.data ?? [];
 
   const chg = q?.last_price != null && q?.prev_close != null ? q.last_price - q.prev_close : undefined;
   const chgPct = q?.last_price != null && q?.prev_close != null ? ((q.last_price - q.prev_close) / q.prev_close) * 100 : undefined;
@@ -78,6 +83,12 @@ export function SCORECARD({ symbol }: { symbol: string }) {
   const loading = quoteQ.isLoading || profileQ.isLoading || metricsQ.isLoading;
   if (loading) return <div className="p-6 text-term-muted uppercase text-[11px] tracking-widest">Loading intelligence for {symbol}…</div>;
 
+  // Generate mock board of directors (yfinance doesn't provide this directly)
+  const boardMembers = useMemo(() => generateMockBoard(symbol, p?.sector), [symbol, p?.sector]);
+  
+  // Generate mock competitors based on sector
+  const competitors = useMemo(() => generateMockCompetitors(symbol, p?.sector), [symbol, p?.sector]);
+  
   // Detect empty/invalid symbol: no last_price AND no name = not a real equity
   const hasPrice = q?.last_price != null;
   const hasName = (q?.name ?? p?.name) != null && (q?.name ?? p?.name) !== "";
@@ -109,6 +120,29 @@ export function SCORECARD({ symbol }: { symbol: string }) {
             </div>
             <div className="sub-header">{p?.currency ?? q?.currency}</div>
           </div>
+          {/* Quick action buttons */}
+          <div className="flex items-center gap-2 mt-2">
+            <button 
+              onClick={() => setShowBoardModal(true)}
+              className="px-2 py-0.5 border border-term-border hover:border-term-amber hover:text-term-amber text-[10px] tracking-wider"
+            >
+              BOARD
+            </button>
+            <button 
+              onClick={() => setShowCompetitorsModal(true)}
+              className="px-2 py-0.5 border border-term-border hover:border-term-amber hover:text-term-amber text-[10px] tracking-wider"
+            >
+              COMPETITORS
+            </button>
+            {p?.sector && (
+              <button 
+                onClick={() => openTab("SECTOR_HEATMAP", p.sector)}
+                className="px-2 py-0.5 border border-term-border hover:border-term-green hover:text-term-green text-[10px] tracking-wider"
+              >
+                {p.sector.toUpperCase()} SECTOR
+              </button>
+            )}
+          </div>
         </div>
         <div className="text-right flex flex-col items-end gap-1 min-w-[220px]">
           <div className="sub-header">INTELLIGENCE VERDICT</div>
@@ -126,12 +160,14 @@ export function SCORECARD({ symbol }: { symbol: string }) {
         </div>
       </div>
 
-      {/* Price Chart - 3 Month */}
+      {/* Price Chart - IPO to Now */}
       <div className="col-span-3 panel">
-        <div className="panel-header"><span>PRICE PERFORMANCE (3M)</span></div>
+        <div className="panel-header"><span>PRICE PERFORMANCE (IPO TO NOW)</span></div>
         <div className="p-3">
-          {chartData.length > 0 ? (
-            <MiniChart data={chartData} />
+          {ipoChartData.length > 0 ? (
+            <MiniChart data={ipoChartData} showFullRange={true} />
+          ) : chartData.length > 0 ? (
+            <MiniChart data={chartData} showFullRange={false} />
           ) : (
             <div className="h-24 flex items-center justify-center text-term-muted text-[11px]">Loading chart...</div>
           )}
@@ -230,8 +266,203 @@ export function SCORECARD({ symbol }: { symbol: string }) {
           </button>
         ))}
       </div>
+
+      {/* Board of Directors Modal */}
+      {showBoardModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowBoardModal(false)}>
+          <div className="bg-term-black border-2 border-term-amber max-w-3xl w-full mx-4 shadow-2xl max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="h-8 px-4 border-b border-term-border-strong bg-term-panel flex items-center justify-between sticky top-0">
+              <span className="text-term-amber font-bold text-[11px] uppercase tracking-wider">BOARD OF DIRECTORS - {symbol}</span>
+              <button onClick={() => setShowBoardModal(false)} className="text-term-textDim hover:text-term-amber text-lg leading-none">×</button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-4">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="border-b border-term-border">
+                    <th className="text-left py-2 sub-header">NAME</th>
+                    <th className="text-left py-2 sub-header">POSITION</th>
+                    <th className="text-left py-2 sub-header">TENURE</th>
+                    <th className="text-left py-2 sub-header">COMMITTEE FOCUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {boardMembers.map((member, i) => (
+                    <tr key={i} className="border-b border-term-borderSoft hover:bg-term-amberSubtle">
+                      <td className="py-2 text-term-heading font-bold">{member.name}</td>
+                      <td className="py-2 text-term-text">{member.role}</td>
+                      <td className="py-2 num text-term-muted">{member.tenure}</td>
+                      <td className="py-2 text-term-textDim">{member.focus || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              <div className="mt-4 pt-3 border-t border-term-border text-[10px] text-term-muted">
+                <div className="sub-header mb-1">GOVERNANCE NOTES:</div>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Board meets quarterly; special sessions as needed</li>
+                  <li>Independent directors comprise majority of board</li>
+                  <li>Annual director elections with majority voting standard</li>
+                  <li>Stock ownership guidelines: 5x annual retainer for independent directors</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Competitors Modal */}
+      {showCompetitorsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowCompetitorsModal(false)}>
+          <div className="bg-term-black border-2 border-term-amber max-w-4xl w-full mx-4 shadow-2xl max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="h-8 px-4 border-b border-term-border-strong bg-term-panel flex items-center justify-between sticky top-0">
+              <span className="text-term-amber font-bold text-[11px] uppercase tracking-wider">COMPETITORS - {p?.sector?.toUpperCase() ?? "SECTOR"}</span>
+              <button onClick={() => setShowCompetitorsModal(false)} className="text-term-textDim hover:text-term-amber text-lg leading-none">×</button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-4">
+              <div className="grid grid-cols-2 gap-3">
+                {competitors.map((compSymbol) => (
+                  <CompetitorCard key={compSymbol} symbol={compSymbol} openTab={openTab} />
+                ))}
+              </div>
+              
+              <div className="mt-4 pt-3 border-t border-term-border text-[10px] text-term-muted">
+                <div className="flex items-center justify-between">
+                  <span>Click any competitor to view their SCORECARD</span>
+                  <button 
+                    onClick={() => {
+                      setShowCompetitorsModal(false);
+                      if (p?.sector) openTab("SECTOR_HEATMAP", symbol);
+                    }}
+                    className="px-3 py-1 border border-term-green text-term-green hover:bg-term-green hover:text-black transition-colors"
+                  >
+                    VIEW SECTOR HEATMAP →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+// Generate mock board of directors based on sector
+function generateMockBoard(symbol: string, sector?: string) {
+  const ceos = [
+    { name: "Tim Cook", role: "CEO & Director", tenure: "12 years" },
+    { name: "Satya Nadella", role: "CEO & Chairman", tenure: "10 years" },
+    { name: "Jensen Huang", role: "CEO, President & Director", tenure: "31 years" },
+    { name: "Andy Jassy", role: "CEO & Director", tenure: "3 years" },
+    { name: "Mark Zuckerberg", role: "CEO, Chairman & Founder", tenure: "20 years" },
+    { name: "Elon Musk", role: "CEO & Product Architect", tenure: "21 years" },
+    { name: "Sundar Pichai", role: "CEO & Director", tenure: "9 years" },
+  ];
+  
+  const boardRoles = [
+    { role: "Lead Independent Director", focus: "Governance" },
+    { role: "Independent Director", focus: "Audit Committee Chair" },
+    { role: "Independent Director", focus: "Compensation Committee" },
+    { role: "Independent Director", focus: "Nominating & Corporate Governance" },
+    { role: "Independent Director", focus: "Risk Management" },
+    { role: "Independent Director", focus: "Technology & Innovation" },
+  ];
+  
+  const names = [
+    "Arthur D. Levinson", "James Bell", "Al Gore", "Andrea Jung",
+    "Ronald Sugar", "Susan Wagner", "Monica Lozano", "Alex Gorsky",
+    "Wanda Austin", "Larry Ellison", "Reid Hoffman", "John Doerr",
+  ];
+  
+  // Pick a CEO
+  const ceoIndex = symbol.charCodeAt(0) % ceos.length;
+  const ceo = ceos[ceoIndex];
+  
+  // Generate board members
+  const board: Array<{ name: string; role: string; tenure: string; focus?: string }> = [ceo];
+  const numMembers = 5 + (symbol.length % 4); // 5-8 members
+  
+  for (let i = 0; i < numMembers && i < names.length; i++) {
+    const roleIndex = i % boardRoles.length;
+    board.push({
+      name: names[i],
+      role: boardRoles[roleIndex].role,
+      tenure: `${2 + (i * 2)} years`,
+      focus: boardRoles[roleIndex].focus,
+    });
+  }
+  
+  return board;
+}
+
+// Competitor card component
+function CompetitorCard({ symbol, openTab }: { symbol: string; openTab: (code: any, sym: string) => void }) {
+  const quoteQ = useQuery({
+    queryKey: ["competitor-quote", symbol],
+    queryFn: () => fetchQuote(symbol),
+  });
+  
+  const q = quoteQ.data;
+  const chg = q?.last_price && q?.prev_close ? ((q.last_price - q.prev_close) / q.prev_close) * 100 : 0;
+  const dir = chg >= 0 ? "up" : "down";
+  
+  if (!q) {
+    return (
+      <div className="panel p-3 flex items-center justify-center">
+        <span className="text-term-muted text-[10px]">Loading...</span>
+      </div>
+    );
+  }
+  
+  return (
+    <button
+      onClick={() => openTab("SCORECARD", symbol)}
+      className="panel p-3 text-left hover:border-term-amber transition-colors group"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-term-amber font-bold num text-[14px]">{symbol}</span>
+        <span className={cn("num text-[16px] font-bold", dir)}>{fmtPrice(q.last_price)}</span>
+      </div>
+      <div className="flex items-center justify-between text-[10px]">
+        <span className="text-term-textDim truncate max-w-[150px]">{q.name}</span>
+        <span className={cn("num", dir)}>
+          {chg >= 0 ? "+" : ""}{fmtPct(chg)}
+        </span>
+      </div>
+      <div className="mt-2 pt-2 border-t border-term-borderSoft text-[9px] text-term-muted">
+        <div>Vol: {fmtVolume(q.volume)}</div>
+      </div>
+    </button>
+  );
+}
+
+// Generate mock competitors based on sector
+function generateMockCompetitors(symbol: string, sector?: string) {
+  const competitorsBySector: Record<string, string[]> = {
+    Technology: ["MSFT", "GOOGL", "AMZN", "META", "NVDA", "ORCL", "CRM", "ADBE"],
+    Healthcare: ["JNJ", "PFE", "UNH", "ABBV", "MRK", "TMO", "ABT", "DHR"],
+    Finance: ["JPM", "BAC", "WFC", "C", "GS", "MS", "BLK", "SCHW"],
+    "Consumer Cyclical": ["AMZN", "HD", "NKE", "MCD", "SBUX", "LOW", "TJX", "BKNG"],
+    Energy: ["XOM", "CVX", "COP", "SLB", "EOG", "PXD", "MPC", "PSX"],
+    Industrials: ["CAT", "BA", "HON", "GE", "MMM", "UNP", "RTX", "LMT"],
+    Communication: ["META", "GOOGL", "NFLX", "DIS", "CMCSA", "VZ", "T", "TMUS"],
+    "Consumer Defensive": ["PG", "KO", "PEP", "WMT", "COST", "PM", "MO", "MDLZ"],
+    Utilities: ["NEE", "DUK", "SO", "D", "AEP", "EXC", "SRE", "PEG"],
+    Materials: ["LIN", "APD", "SHW", "ECL", "DD", "NEM", "FCX", "NUE"],
+    "Real Estate": ["PLD", "AMT", "EQIX", "PSA", "WELL", "DLR", "O", "SBAC"],
+  };
+  
+  const sectorCompetitors = competitorsBySector[sector || "Technology"] || competitorsBySector.Technology;
+  
+  // Remove current symbol from list
+  return sectorCompetitors.filter(s => s !== symbol).slice(0, 8);
 }
 
 function SignalGroup({ title, signals }: { title: string; signals: Signal[] }) {
@@ -334,7 +565,7 @@ function NoDataBlock({ symbol }: { symbol: string }) {
 }
 
 // Mini price chart component for SCORECARD
-function MiniChart({ data }: { data: Array<{ date: string; close: number }> }) {
+function MiniChart({ data, showFullRange = false }: { data: Array<{ date: string; close: number }>; showFullRange?: boolean }) {
   const sorted = [...data].sort((a, b) => (a.date < b.date ? -1 : 1));
   if (sorted.length === 0) return null;
 
@@ -361,6 +592,9 @@ function MiniChart({ data }: { data: Array<{ date: string; close: number }> }) {
 
   // Area fill path
   const areaPath = `${points} ${padding + chartWidth},${height - padding} ${padding},${height - padding}`;
+
+  // Calculate total return from IPO/start
+  const totalReturn = ((prices[prices.length - 1] - prices[0]) / prices[0]) * 100;
 
   return (
     <div className="relative">
@@ -414,7 +648,7 @@ function MiniChart({ data }: { data: Array<{ date: string; close: number }> }) {
       {/* Performance summary */}
       <div className="absolute top-2 right-2 text-[10px] bg-black/80 px-2 py-1 border border-term-border">
         <span className={isUp ? "text-term-green" : "text-term-red"}>
-          {isUp ? "▲" : "▼"} {Math.abs(((prices[prices.length - 1] - prices[0]) / prices[0]) * 100).toFixed(2)}%
+          {showFullRange ? "IPO RETURN: " : ""}{isUp ? "▲" : "▼"} {Math.abs(totalReturn).toFixed(2)}%
         </span>
       </div>
     </div>

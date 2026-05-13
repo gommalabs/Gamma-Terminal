@@ -24,6 +24,7 @@ import { FXC } from "@/functions/FXC";
 import { HELP } from "@/functions/HELP";
 import { QR } from "@/functions/QR";
 import { GP } from "@/functions/GP";
+import { SECTOR_HEATMAP } from "@/functions/SECTOR_HEATMAP";
 import { NI } from "@/functions/NI";
 import { RV } from "@/functions/RV";
 import { ECO } from "@/functions/ECO";
@@ -89,6 +90,8 @@ function ActiveView() {
       return <CRYPTO />;
     case "FXC":
       return <FXC />;
+    case "SECTOR_HEATMAP":
+      return symbol ? <SECTOR_HEATMAP symbol={symbol} /> : <div className="p-6 text-term-muted">No symbol selected</div>;
     case "ECO":
       return <ECO />;
     case "PORT":
