@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Trash2, Plus, Eye, EyeOff, CheckCircle, XCircle, LogOut, User } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
-import { useNavigate } from '@tanstack/react-router';
+import { Save, Trash2, Plus, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 
 interface BrokerConfig {
   id: string;
@@ -16,8 +14,6 @@ interface BrokerConfig {
 }
 
 export default function SettingsPage() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const [brokers, setBrokers] = useState<BrokerConfig[]>([]);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [isAdding, setIsAdding] = useState(false);
@@ -26,10 +22,7 @@ export default function SettingsPage() {
     paperTrading: true,
   });
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate({ to: '/' });
-  };
+
 
   // Load saved broker configs
   useEffect(() => {
@@ -101,19 +94,12 @@ export default function SettingsPage() {
         {/* Account Section */}
         <section className="border border-term-border-strong bg-term-panel p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-term-amber/10 border border-term-amber flex items-center justify-center">
-                <User size={18} className="text-term-amber" />
-              </div>
-              <div>
-                <div className="text-[9px] text-term-textDim tracking-widest uppercase">SIGNED IN AS</div>
-                <div className="text-sm text-term-amber font-bold">{user?.email || user?.phone || 'unknown'}</div>
-                <div className="text-[10px] text-term-textDim">User ID: {user?.id?.slice(0, 8)}…</div>
-              </div>
+            <div>
+              <div className="text-[9px] text-term-textDim tracking-widest uppercase">TERMINAL MODE</div>
+              <div className="text-sm text-term-amber font-bold">LOCAL ACCESS</div>
+              <div className="text-[10px] text-term-textDim">No authentication required</div>
             </div>
-            <button onClick={handleSignOut} className="bb-button" style={{ color: 'var(--color-term-red)', borderColor: 'var(--color-term-red)' }}>
-              <LogOut size={12} /> SIGN OUT
-            </button>
+            <div className="text-[10px] text-term-green tracking-wider">● ONLINE</div>
           </div>
         </section>
 

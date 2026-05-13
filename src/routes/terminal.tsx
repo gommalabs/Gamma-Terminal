@@ -3,7 +3,7 @@ import { lazy, Suspense } from "react";
 
 const TerminalApp = lazy(() => import("@/TerminalApp"));
 
-export const Route = createFileRoute("/_authenticated/terminal")({
+export const Route = createFileRoute("/terminal")({
   component: TerminalRoute,
   ssr: false,
 });
