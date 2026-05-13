@@ -115,11 +115,21 @@ function ActiveView() {
 }
 
 export default function TerminalApp() {
-  const { tabs, activeTabId, setActiveTab } = useWorkspace();
+  const { tabs, activeTabId, setActiveTab, closeTab } = useWorkspace();
 
-  // Keyboard shortcuts for tab switching
+  // Keyboard shortcuts for tab management
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+X to close current tab
+      if (e.ctrlKey && e.key === 'x') {
+        e.preventDefault();
+        
+        if (tabs.length > 0 && activeTabId) {
+          closeTab(activeTabId);
+        }
+        return;
+      }
+      
       // Ctrl+Arrow keys to switch tabs
       if (e.ctrlKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
         e.preventDefault();
@@ -141,7 +151,7 @@ export default function TerminalApp() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [tabs, activeTabId, setActiveTab]);
+  }, [tabs, activeTabId, setActiveTab, closeTab]);
 
   return (
     <div className="h-screen flex flex-col bg-term-black text-term-text font-mono overflow-hidden">
