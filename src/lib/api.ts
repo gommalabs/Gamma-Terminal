@@ -31,6 +31,152 @@ const MOCK_METRICS: Record<string, any> = {
   GOOGL: { symbol: "GOOGL", pe_ratio: 24.8, forward_pe: 21.5, enterprise_to_ebitda: 15.2, revenue_growth: 0.089, earnings_growth: 0.125, gross_margin: 0.568, operating_margin: 0.285, profit_margin: 0.235, return_on_equity: 0.285, debt_to_equity: 0.11, dividend_yield: 0 },
 };
 
+// Generate mock historical candlestick data
+function generateMockCandles(symbol: string, days: number): Candle[] {
+  const candles: Candle[] = [];
+  const basePrice = MOCK_QUOTES[symbol?.toUpperCase()]?.last_price || (100 + Math.random() * 200);
+  let price = basePrice * 0.9;
+  
+  for (let i = days; i >= 0; i--) {
+    const date = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10);
+    const volatility = 0.02;
+    const change = (Math.random() - 0.5) * volatility;
+    const open = price;
+    const close = price * (1 + change);
+    const high = Math.max(open, close) * (1 + Math.random() * 0.01);
+    const low = Math.min(open, close) * (1 - Math.random() * 0.01);
+    const volume = Math.floor(10000000 + Math.random() * 50000000);
+    
+    candles.push({ date, open, high, low, close, volume });
+    price = close;
+  }
+  
+  return candles;
+}
+
+// Generate mock index data
+function generateMockIndexData(symbol: string, days: number): Candle[] {
+  const indexBasePrices: Record<string, number> = {
+    '^GSPC': 4800, '^DJI': 37500, '^IXIC': 15000, '^RUT': 2000,
+    '^VIX': 15, '^GSPTSE': 21000, '^BVSP': 125000,
+    '^FTSE': 7600, '^GDAXI': 16800, '^FCHI': 7500,
+    '^STOXX50E': 4500, '^IBEX': 9800, '^N225': 36000,
+    '^HSI': 17500, '^AXJO': 7600, '^KS11': 2600, '^TWII': 17800,
+  };
+  
+  return generateMockCandlesWithBase(indexBasePrices[symbol] || 1000, days);
+}
+
+// Generate mock crypto data
+function generateMockCryptoData(symbol: string, days: number): Candle[] {
+  const cryptoBasePrices: Record<string, number> = {
+    'BTC-USD': 65000, 'ETH-USD': 3500, 'SOL-USD': 145,
+    'BNB-USD': 580, 'XRP-USD': 0.52, 'ADA-USD': 0.45,
+    'DOGE-USD': 0.15, 'AVAX-USD': 35, 'LINK-USD': 14,
+    'LTC-USD': 72, 'MATIC-USD': 0.72, 'DOT-USD': 7.2,
+  };
+  
+  return generateMockCandlesWithBase(cryptoBasePrices[symbol] || 100, days);
+}
+
+// Generate mock FX data
+function generateMockFXData(symbol: string, days: number): Candle[] {
+  const fxBasePrices: Record<string, number> = {
+    'EURUSD=X': 1.0850, 'GBPUSD=X': 1.2650, 'USDJPY=X': 155.50,
+    'USDCHF=X': 0.8950, 'USDCAD=X': 1.3650, 'AUDUSD=X': 0.6550,
+    'NZDUSD=X': 0.6050, 'EURGBP=X': 0.8580, 'EURJPY=X': 168.50,
+    'GBPJPY=X': 196.50, 'USDCNY=X': 7.23, 'USDMXN=X': 16.85,
+  };
+  
+  return generateMockCandlesWithBase(fxBasePrices[symbol] || 1.0, days);
+}
+
+// Helper function to generate candles with a specific base price
+function generateMockCandlesWithBase(basePrice: number, days: number): Candle[] {
+  const candles: Candle[] = [];
+  let price = basePrice * 0.95;
+  
+  for (let i = days; i >= 0; i--) {
+    const date = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10);
+    const volatility = 0.015;
+    const change = (Math.random() - 0.5) * volatility;
+    const open = price;
+    const close = price * (1 + change);
+    const high = Math.max(open, close) * (1 + Math.random() * 0.008);
+    const low = Math.min(open, close) * (1 - Math.random() * 0.008);
+    const volume = Math.floor(100000000 + Math.random() * 500000000);
+    
+    candles.push({ date, open, high, low, close, volume });
+    price = close;
+  }
+  
+  return candles;
+}
+
+// Generate mock treasury rates
+function generateMockTreasuryRates(days: number): TreasuryRow[] {
+  const rates: TreasuryRow[] = [];
+  
+  for (let i = days; i >= 0; i--) {
+    const date = new Date(Date.now() - i * 864e5).toISOString().slice(0, 10);
+    const baseRate = 0.04 + (Math.random() - 0.5) * 0.005;
+    
+    rates.push({
+      date,
+      month_1: baseRate - 0.005,
+      month_3: baseRate - 0.003,
+      month_6: baseRate - 0.001,
+      year_1: baseRate,
+      year_2: baseRate + 0.002,
+      year_3: baseRate + 0.004,
+      year_5: baseRate + 0.006,
+      year_7: baseRate + 0.007,
+      year_10: baseRate + 0.008,
+      year_20: baseRate + 0.009,
+      year_30: baseRate + 0.010,
+    });
+  }
+  
+  return rates;
+}
+
+// Generate mock market movers
+function generateMockMovers(type: 'gainers' | 'losers' | 'active'): Mover[] {
+  const stocks = [
+    { symbol: 'AMD', name: 'Advanced Micro Devices Inc.', basePrice: 165 },
+    { symbol: 'META', name: 'Meta Platforms Inc.', basePrice: 485 },
+    { symbol: 'AMZN', name: 'Amazon.com Inc.', basePrice: 178 },
+    { symbol: 'NFLX', name: 'Netflix Inc.', basePrice: 625 },
+    { symbol: 'CRM', name: 'Salesforce Inc.', basePrice: 285 },
+    { symbol: 'UBER', name: 'Uber Technologies Inc.', basePrice: 78 },
+    { symbol: 'COIN', name: 'Coinbase Global Inc.', basePrice: 245 },
+    { symbol: 'SQ', name: 'Block Inc.', basePrice: 72 },
+    { symbol: 'SHOP', name: 'Shopify Inc.', basePrice: 82 },
+    { symbol: 'SNOW', name: 'Snowflake Inc.', basePrice: 185 },
+  ];
+  
+  return stocks.map(stock => {
+    const changePercent = type === 'gainers' ? (5 + Math.random() * 15) :
+                         type === 'losers' ? -(5 + Math.random() * 15) :
+                         (Math.random() - 0.5) * 5;
+    const price = stock.basePrice * (1 + changePercent / 100);
+    const change = price - stock.basePrice;
+    
+    return {
+      symbol: stock.symbol,
+      name: stock.name,
+      price,
+      change,
+      percent_change: changePercent / 100,
+      volume: Math.floor(20000000 + Math.random() * 80000000),
+      market_cap: Math.floor(50000000000 + Math.random() * 500000000000),
+      pe_forward: 20 + Math.random() * 40,
+    };
+  }).sort((a, b) => type === 'gainers' ? b.percent_change - a.percent_change :
+                     type === 'losers' ? a.percent_change - b.percent_change :
+                     b.volume - a.volume);
+}
+
 async function get<T>(
   path: string,
   params: Record<string, string | number | boolean | undefined> = {}
@@ -68,17 +214,21 @@ async function get<T>(
     if (path.includes("/equity/fundamental/metrics")) {
       return (MOCK_METRICS[symbol?.toUpperCase()] || MOCK_METRICS.AAPL) as T;
     }
-    
-    // Return empty/default data for other endpoints
+    if (path.includes("/equity/price/historical") || path.includes("/index/price/historical") || path.includes("/currency/price/historical") || path.includes("/crypto/price/historical")) {
+      const days = params.start_date ? Math.ceil((new Date().getTime() - new Date(String(params.start_date)).getTime()) / 864e5) : 30;
+      if (path.includes("/index/price")) return generateMockIndexData(symbol, days) as T;
+      if (path.includes("/crypto/price")) return generateMockCryptoData(symbol, days) as T;
+      if (path.includes("/currency/price")) return generateMockFXData(symbol, days) as T;
+      return generateMockCandles(symbol, days) as T;
+    }
     if (path.includes("/news/company")) return [] as T;
     if (path.includes("/equity/fundamental/income")) return [] as T;
     if (path.includes("/equity/estimates/consensus")) return {} as T;
-    if (path.includes("/equity/discovery")) return [] as T;
+    if (path.includes("/equity/discovery/gainers")) return generateMockMovers('gainers') as T;
+    if (path.includes("/equity/discovery/losers")) return generateMockMovers('losers') as T;
+    if (path.includes("/equity/discovery/active")) return generateMockMovers('active') as T;
     if (path.includes("/derivatives/options")) return [] as T;
-    if (path.includes("/index/price")) return [] as T;
-    if (path.includes("/fixedincome")) return [] as T;
-    if (path.includes("/currency/price")) return [] as T;
-    if (path.includes("/crypto/price")) return [] as T;
+    if (path.includes("/fixedincome")) return generateMockTreasuryRates(30) as T;
     if (path.includes("/equity/search")) return [] as T;
     
     throw error;
