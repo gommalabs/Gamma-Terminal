@@ -7,6 +7,61 @@ export class ApiError extends Error {
 }
 
 // Mock data for when API is unavailable
+// Generate dynamic mock quote for any symbol
+function generateMockQuote(symbol: string): any {
+  const basePrice = 50 + Math.random() * 200;
+  return {
+    symbol: symbol.toUpperCase(),
+    name: `${symbol.toUpperCase()} Inc.`,
+    last_price: parseFloat(basePrice.toFixed(2)),
+    prev_close: parseFloat((basePrice * (0.98 + Math.random() * 0.04)).toFixed(2)),
+    open: parseFloat((basePrice * (0.99 + Math.random() * 0.02)).toFixed(2)),
+    high: parseFloat((basePrice * (1.01 + Math.random() * 0.02)).toFixed(2)),
+    low: parseFloat((basePrice * (0.98 + Math.random() * 0.02)).toFixed(2)),
+    volume: Math.floor(5000000 + Math.random() * 50000000),
+    ma_50d: parseFloat((basePrice * 0.95).toFixed(2)),
+    ma_200d: parseFloat((basePrice * 0.90).toFixed(2)),
+    year_high: parseFloat((basePrice * 1.15).toFixed(2)),
+    year_low: parseFloat((basePrice * 0.75).toFixed(2)),
+  };
+}
+
+// Generate dynamic mock profile for any symbol
+function generateMockProfile(symbol: string): any {
+  const sectors = ['Technology', 'Healthcare', 'Finance', 'Consumer Cyclical', 'Energy', 'Industrials'];
+  const industries = ['Software', 'Semiconductors', 'Biotechnology', 'Banking', 'Retail', 'Manufacturing'];
+  const sector = sectors[Math.floor(Math.random() * sectors.length)];
+  const industry = industries[Math.floor(Math.random() * industries.length)];
+  
+  return {
+    symbol: symbol.toUpperCase(),
+    name: `${symbol.toUpperCase()} Inc.`,
+    sector,
+    industry_category: industry,
+    employees: Math.floor(1000 + Math.random() * 100000),
+    hq_country: 'United States',
+    currency: 'USD',
+  };
+}
+
+// Generate dynamic mock metrics for any symbol
+function generateMockMetrics(symbol: string): any {
+  return {
+    symbol: symbol.toUpperCase(),
+    pe_ratio: parseFloat((15 + Math.random() * 50).toFixed(2)),
+    forward_pe: parseFloat((12 + Math.random() * 40).toFixed(2)),
+    enterprise_to_ebitda: parseFloat((10 + Math.random() * 30).toFixed(2)),
+    revenue_growth: parseFloat((Math.random() * 0.3).toFixed(3)),
+    earnings_growth: parseFloat((Math.random() * 0.4).toFixed(3)),
+    gross_margin: parseFloat((0.2 + Math.random() * 0.5).toFixed(3)),
+    operating_margin: parseFloat((0.05 + Math.random() * 0.3).toFixed(3)),
+    profit_margin: parseFloat((0.05 + Math.random() * 0.25).toFixed(3)),
+    return_on_equity: parseFloat((0.1 + Math.random() * 0.5).toFixed(3)),
+    debt_to_equity: parseFloat((Math.random() * 2).toFixed(2)),
+    dividend_yield: parseFloat((Math.random() * 0.03).toFixed(4)),
+  };
+}
+
 const MOCK_QUOTES: Record<string, any> = {
   AAPL: { symbol: "AAPL", name: "Apple Inc.", last_price: 182.52, prev_close: 180.18, open: 181.20, high: 183.45, low: 180.90, volume: 52345678, ma_50d: 178.30, ma_200d: 175.60, year_high: 199.62, year_low: 164.08 },
   MSFT: { symbol: "MSFT", name: "Microsoft Corp.", last_price: 415.30, prev_close: 412.80, open: 413.50, high: 416.20, low: 412.10, volume: 23456789, ma_50d: 408.50, ma_200d: 395.20, year_high: 468.35, year_low: 362.90 },
@@ -206,13 +261,13 @@ async function get<T>(
     const symbol = params.symbol as string;
     
     if (path.includes("/equity/price/quote")) {
-      return (MOCK_QUOTES[symbol?.toUpperCase()] || MOCK_QUOTES.AAPL) as T;
+      return (MOCK_QUOTES[symbol?.toUpperCase()] || generateMockQuote(symbol)) as T;
     }
     if (path.includes("/equity/profile")) {
-      return (MOCK_PROFILES[symbol?.toUpperCase()] || MOCK_PROFILES.AAPL) as T;
+      return (MOCK_PROFILES[symbol?.toUpperCase()] || generateMockProfile(symbol)) as T;
     }
     if (path.includes("/equity/fundamental/metrics")) {
-      return (MOCK_METRICS[symbol?.toUpperCase()] || MOCK_METRICS.AAPL) as T;
+      return (MOCK_METRICS[symbol?.toUpperCase()] || generateMockMetrics(symbol)) as T;
     }
     if (path.includes("/equity/price/historical") || path.includes("/index/price/historical") || path.includes("/currency/price/historical") || path.includes("/crypto/price/historical")) {
       const days = params.start_date ? Math.ceil((new Date().getTime() - new Date(String(params.start_date)).getTime()) / 864e5) : 30;
