@@ -88,7 +88,7 @@ function SignupPage() {
   );
 }
 
-function Field({ label, value, onChange, type = "text", placeholder, required }: any) {
+function Field({ label, value, onChange, type = "text", placeholder, required }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string; required?: boolean }) {
   return (
     <label className="block">
       <div className="text-[8px] text-term-textDim tracking-[0.2em] uppercase mb-1">{label}</div>
