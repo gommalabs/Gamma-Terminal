@@ -1,21 +1,45 @@
-import { useState } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchHistorical } from "@/lib/api";
-import { fmtPrice, fmtDate } from "@/lib/format";
+import { fmtPrice, fmtDate, fmtTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
+interface Drawing {
+  id: string;
+  type: "line" | "ray" | "horizontal" | "vertical" | "fibonacci";
+  points: Array<{ x: number; y: number }>;
+  color: string;
+  width: number;
+}
+
 const INTERVALS = [
-  { label: "1D", value: "1d" },
-  { label: "5D", value: "5d" },
-  { label: "1M", value: "1mo" },
-  { label: "3M", value: "3mo" },
-  { label: "6M", value: "6mo" },
-  { label: "1Y", value: "1y" },
-  { label: "5Y", value: "5y" },
+  { label: "30s", value: "30s", seconds: 30 },
+  { label: "1m", value: "1m", seconds: 60 },
+  { label: "5m", value: "5m", seconds: 300 },
+  { label: "15m", value: "15m", seconds: 900 },
+  { label: "1H", value: "1h", seconds: 3600 },
+  { label: "4H", value: "4h", seconds: 14400 },
+  { label: "1D", value: "1d", seconds: 86400 },
+  { label: "1W", value: "1wk", seconds: 604800 },
+];
+
+const CHART_TYPES = [
+  { label: "CANDLE", value: "candle" },
+  { label: "LINE", value: "line" },
+  { label: "BAR", value: "bar" },
+  { label: "AREA", value: "area" },
 ];
 
 export function GP({ symbol }: { symbol: string }) {
-  const [interval, setInterval] = useState("1mo");
+  const [interval, setInterval] = useState("1d");
+  const [chartType, setChartType] = useState("candle");
+  const [showVolume, setShowVolume] = useState(true);
+  const [showMA, setShowMA] = useState({ ma20: true, ma50: false, ma200: false });
+  const [drawings, setDrawings] = useState<Drawing[]>([]);
+  const [drawingTool, setDrawingTool] = useState<"none" | "line" | "horizontal">("none");
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [drawingStart, setDrawingStart] = useState<{ x: number; y: number } | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   
   const { data = [], isLoading, error } = useQuery({
     queryKey: ["chart", symbol, interval],
@@ -24,30 +48,90 @@ export function GP({ symbol }: { symbol: string }) {
 
   const sorted = [...data].sort((a, b) => (a.date < b.date ? -1 : 1));
   
-  // Calculate chart dimensions
+  // Calculate Moving Averages
+  const maData = useMemo(() => {
+    if (sorted.length === 0) return { ma20: [], ma50: [], ma200: [] };
+    
+    const calculateMA = (period: number) => {
+      const ma: Array<{ x: number; y: number } | null> = [];
+      for (let i = 0; i < sorted.length; i++) {
+        if (i < period - 1) {
+          ma.push(null);
+        } else {
+          const sum = sorted.slice(i - period + 1, i + 1).reduce((acc, d) => acc + d.close, 0);
+          ma.push({ x: i, y: sum / period });
+        }
+      }
+      return ma;
+    };
+    
+    return {
+      ma20: calculateMA(20),
+      ma50: calculateMA(50),
+      ma200: calculateMA(200),
+    };
+  }, [sorted]);
+  
+  // Chart dimensions and scaling
+  const width = 1200;
+  const height = 600;
+  const padding = { top: 20, right: 70, bottom: 40, left: 10 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const volumeHeight = showVolume ? 80 : 0;
+  const mainChartHeight = chartHeight - volumeHeight;
+  
   const prices = sorted.map(d => d.close);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
+  const minPrice = Math.min(...prices) * 0.998;
+  const maxPrice = Math.max(...prices) * 1.002;
   const priceRange = maxPrice - minPrice || 1;
   
-  // Generate SVG path
-  const width = 800;
-  const height = 300;
-  const padding = 40;
-  const chartWidth = width - padding * 2;
-  const chartHeight = height - padding * 2;
-  
-  const points = sorted.map((d, i) => {
-    const x = padding + (i / (sorted.length - 1)) * chartWidth;
-    const y = padding + chartHeight - ((d.close - minPrice) / priceRange) * chartHeight;
-    return `${x},${y}`;
-  }).join(" ");
-  
-  // Volume bars
   const volumes = sorted.map(d => d.volume);
-  const maxVolume = Math.max(...volumes);
+  const maxVolume = Math.max(...volumes) || 1;
   
-  const isUp = sorted.length > 1 && sorted[sorted.length - 1].close >= sorted[0].close;
+  // Coordinate conversion functions
+  const getX = (index: number) => padding.left + (index / Math.max(sorted.length - 1, 1)) * chartWidth;
+  const getY = (price: number) => padding.top + mainChartHeight - ((price - minPrice) / priceRange) * mainChartHeight;
+  const getVolumeY = (vol: number) => height - padding.bottom - (vol / maxVolume) * volumeHeight;
+  
+  // Mouse interaction handlers for drawing
+  const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (drawingTool === "none" || !svgRef.current) return;
+    
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (width / rect.width);
+    const y = (e.clientY - rect.top) * (height / rect.height);
+    
+    setIsDrawing(true);
+    setDrawingStart({ x, y });
+  };
+  
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isDrawing || !drawingStart || !svgRef.current) return;
+  };
+  
+  const handleMouseUp = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!isDrawing || !drawingStart || !svgRef.current) {
+      setIsDrawing(false);
+      return;
+    }
+    
+    const rect = svgRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (width / rect.width);
+    const y = (e.clientY - rect.top) * (height / rect.height);
+    
+    const newDrawing: Drawing = {
+      id: `drawing-${Date.now()}`,
+      type: drawingTool as any,
+      points: [drawingStart, { x, y }],
+      color: "#ff9500",
+      width: 2,
+    };
+    
+    setDrawings([...drawings, newDrawing]);
+    setIsDrawing(false);
+    setDrawingStart(null);
+  };
 
   if (isLoading) {
     return (
@@ -57,69 +141,166 @@ export function GP({ symbol }: { symbol: string }) {
     );
   }
   
-  if (error) {
+  if (error || sorted.length === 0) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-term-red text-xs">{(error as Error).message}</div>
-      </div>
-    );
-  }
-  
-  if (sorted.length === 0) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-term-textDim text-xs uppercase tracking-widest">No data available</div>
+        <div className="text-term-red text-xs">{error ? (error as Error).message : 'No data available'}</div>
       </div>
     );
   }
 
+  const lastCandle = sorted[sorted.length - 1];
+  const isUp = lastCandle.close >= sorted[0].close;
+
   return (
     <div className="h-full flex flex-col bg-term-black">
       {/* Header */}
-      <div className="flex items-center justify-between h-7 px-3 border-b border-term-border-strong bg-term-panel">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between h-8 px-3 border-b border-term-border-strong bg-term-panel">
+        <div className="flex items-center gap-4">
           <span className="text-term-amber font-bold text-[10px] uppercase tracking-wider">{symbol} CHART</span>
-          <span className="text-term-textDim text-[9px] num">${sorted[sorted.length - 1].close.toFixed(2)}</span>
+          <span className="text-term-textDim text-[9px] num">${lastCandle.close.toFixed(2)}</span>
+          <span className={cn("text-[9px] num", isUp ? "text-term-green" : "text-term-red")}>
+            {isUp ? "▲" : "▼"} {Math.abs(((lastCandle.close - sorted[0].close) / sorted[0].close) * 100).toFixed(2)}%
+          </span>
         </div>
-        <div className="flex items-center gap-1">
-          {INTERVALS.map((int) => (
-            <button
-              key={int.value}
-              onClick={() => setInterval(int.value)}
-              className={cn(
-                "px-2 py-0.5 text-[9px] uppercase tracking-wider border transition-colors",
-                interval === int.value
-                  ? "border-term-amber text-term-amber bg-term-amber/10"
-                  : "border-transparent text-term-textDim hover:text-term-text hover:border-term-border"
-              )}
-            >
-              {int.label}
-            </button>
-          ))}
+        
+        <div className="flex items-center gap-2">
+          {/* Chart Type Selector */}
+          <div className="flex items-center gap-0.5 border-r border-term-border pr-2">
+            {CHART_TYPES.map((type) => (
+              <button
+                key={type.value}
+                onClick={() => setChartType(type.value)}
+                className={cn(
+                  "px-1.5 py-0.5 text-[8px] uppercase tracking-wider border transition-colors",
+                  chartType === type.value
+                    ? "border-term-amber text-term-amber bg-term-amber/10"
+                    : "border-transparent text-term-textDim hover:text-term-text"
+                )}
+              >
+                {type.label}
+              </button>
+            ))}
+          </div>
+          
+          {/* Interval Selector */}
+          <div className="flex items-center gap-0.5">
+            {INTERVALS.map((int) => (
+              <button
+                key={int.value}
+                onClick={() => setInterval(int.value)}
+                className={cn(
+                  "px-1.5 py-0.5 text-[8px] uppercase tracking-wider border transition-colors",
+                  interval === int.value
+                    ? "border-term-amber text-term-amber bg-term-amber/10"
+                    : "border-transparent text-term-textDim hover:text-term-text"
+                )}
+              >
+                {int.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className="h-6 px-3 border-b border-term-border bg-term-panel flex items-center justify-between text-[9px]">
+        <div className="flex items-center gap-3">
+          <span className="text-term-textDim uppercase tracking-wider">TOOLS:</span>
+          <button
+            onClick={() => setDrawingTool("none")}
+            className={cn(
+              "px-2 py-0.5 border",
+              drawingTool === "none" ? "border-term-amber text-term-amber" : "border-term-border text-term-textDim"
+            )}
+          >
+            NONE
+          </button>
+          <button
+            onClick={() => setDrawingTool("line")}
+            className={cn(
+              "px-2 py-0.5 border",
+              drawingTool === "line" ? "border-term-amber text-term-amber" : "border-term-border text-term-textDim"
+            )}
+          >
+            LINE
+          </button>
+          <button
+            onClick={() => setDrawingTool("horizontal")}
+            className={cn(
+              "px-2 py-0.5 border",
+              drawingTool === "horizontal" ? "border-term-amber text-term-amber" : "border-term-border text-term-textDim"
+            )}
+          >
+            HORIZONTAL
+          </button>
+          <button
+            onClick={() => setDrawings([])}
+            className="px-2 py-0.5 border border-term-border text-term-textDim hover:text-term-red"
+          >
+            CLEAR
+          </button>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showVolume}
+              onChange={(e) => setShowVolume(e.target.checked)}
+              className="w-3 h-3 accent-term-amber"
+            />
+            <span className="text-term-textDim">VOL</span>
+          </label>
+          <label className="flex items-center gap-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showMA.ma20}
+              onChange={(e) => setShowMA({ ...showMA, ma20: e.target.checked })}
+              className="w-3 h-3 accent-term-amber"
+            />
+            <span className="text-term-textDim">MA20</span>
+          </label>
+          <label className="flex items-center gap-1 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showMA.ma50}
+              onChange={(e) => setShowMA({ ...showMA, ma50: e.target.checked })}
+              className="w-3 h-3 accent-term-amber"
+            />
+            <span className="text-term-textDim">MA50</span>
+          </label>
         </div>
       </div>
 
       {/* Chart Area */}
       <div className="flex-1 relative overflow-hidden">
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full">
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${width} ${height}`}
+          className="w-full h-full cursor-crosshair"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+        >
           {/* Grid lines */}
           {[0, 0.25, 0.5, 0.75, 1].map((pct) => {
-            const y = padding + chartHeight * pct;
+            const y = padding.top + mainChartHeight * pct;
             const price = maxPrice - priceRange * pct;
             return (
               <g key={pct}>
                 <line
-                  x1={padding}
+                  x1={padding.left}
                   y1={y}
-                  x2={width - padding}
+                  x2={width - padding.right}
                   y2={y}
                   stroke="#1a1a1a"
                   strokeWidth="1"
                 />
                 <text
-                  x={padding - 5}
+                  x={width - padding.right + 5}
                   y={y + 3}
-                  textAnchor="end"
+                  textAnchor="start"
                   fill="#666"
                   fontSize="10"
                   fontFamily="monospace"
@@ -130,41 +311,119 @@ export function GP({ symbol }: { symbol: string }) {
             );
           })}
           
-          {/* Price line */}
-          <polyline
-            points={points}
-            fill="none"
-            stroke={isUp ? "#00ff41" : "#ff073a"}
-            strokeWidth="2"
-          />
+          {/* Candlesticks or Line Chart */}
+          {chartType === "candle" && sorted.map((d, i) => {
+            const x = getX(i);
+            const yOpen = getY(d.open);
+            const yClose = getY(d.close);
+            const yHigh = getY(d.high);
+            const yLow = getY(d.low);
+            const candleUp = d.close >= d.open;
+            const candleWidth = Math.max(2, chartWidth / sorted.length * 0.6);
+            
+            return (
+              <g key={d.date}>
+                {/* Wick */}
+                <line
+                  x1={x}
+                  y1={yHigh}
+                  x2={x}
+                  y2={yLow}
+                  stroke={candleUp ? "#00ff41" : "#ff073a"}
+                  strokeWidth="1"
+                />
+                {/* Body */}
+                <rect
+                  x={x - candleWidth / 2}
+                  y={Math.min(yOpen, yClose)}
+                  width={candleWidth}
+                  height={Math.max(Math.abs(yClose - yOpen), 1)}
+                  fill={candleUp ? "#00ff41" : "#ff073a"}
+                  stroke={candleUp ? "#00ff41" : "#ff073a"}
+                  strokeWidth="1"
+                />
+              </g>
+            );
+          })}
           
-          {/* Fill area under line */}
-          <polygon
-            points={`${padding},${padding + chartHeight} ${points} ${width - padding},${padding + chartHeight}`}
-            fill={isUp ? "rgba(0, 255, 65, 0.1)" : "rgba(255, 7, 58, 0.1)"}
-          />
+          {chartType === "line" && (
+            <polyline
+              points={sorted.map((d, i) => `${getX(i)},${getY(d.close)}`).join(" ")}
+              fill="none"
+              stroke={isUp ? "#00ff41" : "#ff073a"}
+              strokeWidth="2"
+            />
+          )}
           
-          {/* Volume bars at bottom */}
-          {sorted.map((d, i) => {
-            const x = padding + (i / (sorted.length - 1)) * chartWidth;
-            const barHeight = (d.volume / maxVolume) * 40;
-            const isCandleUp = i > 0 && d.close >= sorted[i - 1].close;
+          {/* Moving Averages */}
+          {showMA.ma20 && (
+            <polyline
+              points={maData.ma20.filter(p => p !== null).map((p, idx) => `${getX(idx + 19)},${getY(p!.y)}`).join(" ")}
+              fill="none"
+              stroke="#00bfff"
+              strokeWidth="1.5"
+              opacity="0.8"
+            />
+          )}
+          {showMA.ma50 && (
+            <polyline
+              points={maData.ma50.filter(p => p !== null).map((p, idx) => `${getX(idx + 49)},${getY(p!.y)}`).join(" ")}
+              fill="none"
+              stroke="#ff69b4"
+              strokeWidth="1.5"
+              opacity="0.8"
+            />
+          )}
+          
+          {/* Volume bars */}
+          {showVolume && sorted.map((d, i) => {
+            const x = getX(i);
+            const barHeight = (d.volume / maxVolume) * volumeHeight;
+            const candleUp = d.close >= d.open;
             return (
               <rect
                 key={d.date}
-                x={x - 1}
-                y={height - padding - barHeight}
-                width="2"
+                x={x - 2}
+                y={height - padding.bottom - barHeight}
+                width="4"
                 height={barHeight}
-                fill={isCandleUp ? "rgba(0, 255, 65, 0.3)" : "rgba(255, 7, 58, 0.3)"}
+                fill={candleUp ? "rgba(0, 255, 65, 0.4)" : "rgba(255, 7, 58, 0.4)"}
               />
             );
           })}
           
+          {/* Drawings */}
+          {drawings.map((drawing) => (
+            <line
+              key={drawing.id}
+              x1={drawing.points[0].x}
+              y1={drawing.points[0].y}
+              x2={drawing.points[1].x}
+              y2={drawing.points[1].y}
+              stroke={drawing.color}
+              strokeWidth={drawing.width}
+              strokeDasharray={drawing.type === "ray" ? "5,5" : undefined}
+            />
+          ))}
+          
+          {/* Current drawing preview */}
+          {isDrawing && drawingStart && (
+            <line
+              x1={drawingStart.x}
+              y1={drawingStart.y}
+              x2={drawingStart.x + 50}
+              y2={drawingStart.y + 50}
+              stroke="#ff9500"
+              strokeWidth="2"
+              strokeDasharray="5,5"
+              opacity="0.5"
+            />
+          )}
+          
           {/* Date labels */}
           {[0, 0.25, 0.5, 0.75, 1].map((pct) => {
             const idx = Math.floor(pct * (sorted.length - 1));
-            const x = padding + pct * chartWidth;
+            const x = getX(idx);
             return (
               <text
                 key={pct}
@@ -184,20 +443,22 @@ export function GP({ symbol }: { symbol: string }) {
         {/* Current price indicator */}
         <div className="absolute right-0 top-1/2 transform -translate-y-1/2">
           <div className={`px-2 py-1 text-[9px] font-bold num ${isUp ? 'bg-term-green text-term-black' : 'bg-term-red text-term-black'}`}>
-            ${sorted[sorted.length - 1].close.toFixed(2)}
+            ${lastCandle.close.toFixed(2)}
           </div>
         </div>
       </div>
 
       {/* Stats footer */}
-      <div className="h-6 px-3 border-t border-term-border-strong bg-term-panel flex items-center justify-between text-[9px] uppercase tracking-wider">
+      <div className="h-7 px-3 border-t border-term-border-strong bg-term-panel flex items-center justify-between text-[9px] uppercase tracking-wider">
         <div className="flex items-center gap-4 text-term-textDim">
-          <span>H: <span className="text-term-green num">${maxPrice.toFixed(2)}</span></span>
-          <span>L: <span className="text-term-red num">${minPrice.toFixed(2)}</span></span>
+          <span>O: <span className="num text-term-text">${lastCandle.open.toFixed(2)}</span></span>
+          <span>H: <span className="num text-term-green">${maxPrice.toFixed(2)}</span></span>
+          <span>L: <span className="num text-term-red">${minPrice.toFixed(2)}</span></span>
+          <span>C: <span className={cn("num", isUp ? "text-term-green" : "text-term-red")}>${lastCandle.close.toFixed(2)}</span></span>
           <span>VOL: <span className="num">{(sorted.reduce((sum, d) => sum + d.volume, 0) / 1e6).toFixed(1)}M</span></span>
         </div>
         <div className="text-term-textDim">
-          {sorted.length} DATA POINTS · {INTERVALS.find(i => i.value === interval)?.label}
+          {sorted.length} CANDLES · {INTERVALS.find(i => i.value === interval)?.label} · {chartType.toUpperCase()}
         </div>
       </div>
     </div>
