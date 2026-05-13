@@ -1,65 +1,66 @@
+import { useEffect, useState } from "react";
 import { useWorkspace } from "@/store/workspaceStore";
-import { FN_BY_CODE, type FunctionCode } from "@/lib/functions";
-import { cn } from "@/lib/cn";
-
-interface Btn { code: FunctionCode; label: string; }
-
-const BUTTONS: Btn[] = [
-  { code: "CC",     label: "Home" },
-  { code: "SCORECARD", label: "Scorecard" },
-  { code: "GP",     label: "Chart" },
-  { code: "KEY",    label: "Ratios" },
-  { code: "FA",     label: "Financials" },
-  { code: "OMON",   label: "Options" },
-  { code: "NI",     label: "News" },
-  { code: "MOV",    label: "Movers" },
-  { code: "WEI",    label: "Global" },
-  { code: "CRYPTO", label: "Crypto" },
-  { code: "FXC",    label: "FX" },
-  { code: "CURV",   label: "Yields" },
-  { code: "SETTINGS", label: "Settings" },
-];
 
 export function QuickBar() {
-  const { openTab, activeSymbol, tabs, activeTabId } = useWorkspace();
-  const activeCode = tabs.find((t) => t.id === activeTabId)?.code;
+  const { openTab } = useWorkspace();
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const quickFunctions = [
+    { key: "F1", code: "HELP", label: "HELP" },
+    { key: "F2", code: "CC", label: "CMD" },
+    { key: "F3", code: "DES", label: "DESC" },
+    { key: "F4", code: "HP", label: "CHART" },
+    { key: "F5", code: "FA", label: "FA" },
+    { key: "F6", code: "KEY", label: "KEYS" },
+    { key: "F7", code: "SCORECARD", label: "SCORE" },
+    { key: "F8", code: "MOV", label: "MOVIES" },
+    { key: "F9", code: "CRYPTO", label: "CRYPTO" },
+    { key: "F10", code: "WEI", label: "WEI" },
+    { key: "F11", code: "NI", label: "NEWS" },
+    { key: "F12", code: "SETTINGS", label: "SETUP" },
+  ];
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.startsWith("F") && e.key.length <= 3) {
+        const fKeyNum = parseInt(e.key.substring(1));
+        if (fKeyNum >= 1 && fKeyNum <= 12) {
+          e.preventDefault();
+          const func = quickFunctions[fKeyNum - 1];
+          if (func) {
+            openTab(func.code as any);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [openTab]);
 
   return (
-    <div className="flex items-stretch h-9 bg-term-bg2 border-b border-term-border overflow-x-auto scroll-thin">
-      <span className="hidden sm:flex items-center px-3 sub-header shrink-0 border-r border-term-border">
-        QUICK
-      </span>
-      {BUTTONS.map((b) => {
-        const fn = FN_BY_CODE[b.code];
-        const isActive = b.code === activeCode;
-        const needsSymbol = fn.needsSymbol;
-        const title = needsSymbol
-          ? `${b.code} — ${fn.name} · uses CTX ${activeSymbol ?? "AAPL"}`
-          : `${b.code} — ${fn.name}`;
-        return (
+    <div className="flex items-center justify-between h-6 px-2 bg-term-panel border-t border-term-border-strong">
+      <div className="flex items-center gap-1">
+        {quickFunctions.map((func) => (
           <button
-            key={b.code}
-            title={title}
-            onClick={() => openTab(b.code, needsSymbol ? (activeSymbol ?? "AAPL") : undefined)}
-            className={cn(
-              "group flex flex-col items-center justify-center px-3 py-1 border-r border-term-border shrink-0 min-w-[78px] transition-colors",
-              isActive
-                ? "bg-term-amberSubtle text-term-amber"
-                : "hover:bg-term-panel2 text-term-muted hover:text-term-text"
-            )}
+            key={func.key}
+            onClick={() => openTab(func.code as any)}
+            className="bb-fkey hover:bg-term-amberSubtle hover:border-term-amber cursor-pointer"
+            title={`${func.key} - ${func.label}`}
           >
-            <span className={cn(
-              "text-[11px] font-bold tracking-[0.12em]",
-              isActive ? "text-term-amber" : "text-term-amber/70 group-hover:text-term-amber"
-            )}>
-              {b.code}
-            </span>
-            <span className="text-[9px] uppercase tracking-[0.15em] text-term-muted group-hover:text-term-text">
-              {b.label}
-            </span>
+            {func.key}
           </button>
-        );
-      })}
+        ))}
+      </div>
+      
+      <div className="flex items-center gap-3 text-[7px] uppercase tracking-wider text-term-textDim num">
+        <span>{time.toLocaleTimeString()}</span>
+      </div>
     </div>
   );
 }

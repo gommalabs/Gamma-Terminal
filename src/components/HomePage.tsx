@@ -218,110 +218,54 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col relative">
-      {/* Breaking News Notification - Bottom Right */}
-      {breakingNewsAlert && (
-        <div className="fixed bottom-20 right-6 z-50 max-w-md animate-slide-in">
-          <div className="bg-red-950/95 border border-red-500 rounded-lg p-4 shadow-lg shadow-red-900/50 backdrop-blur-sm">
-            <button
-              onClick={() => setBreakingNewsAlert(null)}
-              className="absolute top-2 right-2 p-1 hover:bg-red-900 rounded transition-colors"
-            >
-              <X size={14} className="text-red-400" />
-            </button>
-            <div className="flex items-start gap-3 pr-6">
-              <AlertCircle size={18} className="text-red-400 mt-0.5 flex-shrink-0" />
-              <div className="flex-1 cursor-pointer" onClick={() => setSelectedArticle(breakingNewsAlert)}>
-                <div className="text-xs font-bold text-red-400 uppercase tracking-wider mb-2">Breaking News</div>
-                <div className="text-sm text-amber-100 leading-snug hover:text-amber-300 transition-colors">
-                  {breakingNewsAlert.headline}
-                </div>
-                <div className="text-xs text-orange-700 mt-2">Click to read full report →</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
+    <div className="h-full flex flex-col bg-term-black overflow-hidden">
       {/* Connection Status Bar */}
-      <div className="flex items-center justify-center gap-2 px-4 py-1.5 bg-gradient-to-r from-orange-950/30 via-black to-orange-950/30 border-b border-orange-900/30">
+      <div className="flex items-center justify-center gap-2 px-3 py-1 bg-term-panel border-b border-term-border-strong">
         {connectionStatus === 'connecting' ? (
           <>
-            <Activity size={14} className="text-orange-500 animate-pulse" />
-            <span className="text-xs text-orange-500 font-medium">Connecting...</span>
+            <Activity size={12} className="text-term-amber animate-pulse" />
+            <span className="text-[9px] text-term-amber uppercase tracking-wider">Connecting...</span>
           </>
         ) : connectionStatus === 'connected' ? (
           <>
-            <Zap size={14} className="text-green-500 animate-pulse" />
-            <span className="text-xs text-green-500 font-medium">LIVE</span>
+            <span className="w-1.5 h-1.5 bg-term-green animate-pulse" />
+            <span className="text-[9px] text-term-green uppercase tracking-wider font-bold">LIVE</span>
           </>
         ) : (
           <>
-            <Activity size={14} className="text-red-500" />
-            <span className="text-xs text-red-500 font-medium">OFFLINE</span>
+            <Activity size={12} className="text-term-red" />
+            <span className="text-[9px] text-term-red uppercase tracking-wider">OFFLINE</span>
           </>
         )}
       </div>
 
-      {/* Hint bar */}
-      <div className="px-6 py-3 bg-orange-950/20 border-b border-orange-900/30 flex items-center justify-center gap-4">
-        <span className="text-xs text-orange-700 uppercase tracking-wider">Press <span className="text-amber-400 font-bold">:</span> to open command palette</span>
-      </div>
-
       {/* Three Column Layout */}
-      <div className="flex-1 grid grid-cols-3 gap-6 p-6 overflow-auto">
+      <div className="flex-1 grid grid-cols-3 divide-x divide-term-border overflow-auto">
         
-        {/* Column 1: Major Indices with Sparklines */}
-        <div className="glass-card p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-orange-950/50 rounded-lg border border-orange-900/50">
-              <TrendingUp size={20} className="text-amber-400" />
-            </div>
-            <h2 className="text-base font-semibold text-amber-400">Major Indices</h2>
-          </div>
+        {/* Column 1: Major Indices */}
+        <div className="p-2">
+          <div className="bb-header mb-2">MAJOR INDICES</div>
           
-          <div className="space-y-4">
+          <div className="space-y-1">
             {indices.map((index, idx) => {
               const isUp = index.change >= 0;
               return (
                 <div
                   key={idx}
-                  className="group p-4 bg-black/50 border border-orange-900/50 rounded hover:border-amber-500/50 transition-all duration-300 cursor-pointer"
+                  className="p-2 bg-term-panel border border-term-border hover:border-term-amber transition-colors cursor-pointer"
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-semibold text-amber-400 text-sm">{index.symbol}</span>
-                    <span className={`text-xs font-mono ${isUp ? 'text-green-500' : 'text-red-500'}`}>
-                      {isUp ? <ArrowUpRight size={12} className="inline mr-1" /> : <ArrowDownRight size={12} className="inline mr-1" />}
-                      {Math.abs(index.changePercent).toFixed(2)}%
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-term-amber text-[10px] uppercase tracking-wider">{index.symbol}</span>
+                    <span className={`text-[9px] font-mono ${isUp ? 'text-term-green' : 'text-term-red'}`}>
+                      {isUp ? '▲' : '▼'} {Math.abs(index.changePercent).toFixed(2)}%
                     </span>
-                  </div>
-                  
-                  {/* Sparkline Chart */}
-                  <div className="h-12 mb-3">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={index.history}>
-                        <defs>
-                          <linearGradient id={`gradient-${idx}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={isUp ? '#10b981' : '#ef4444'} stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor={isUp ? '#10b981' : '#ef4444'} stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <Area
-                          type="monotone"
-                          dataKey="value"
-                          stroke={isUp ? '#10b981' : '#ef4444'}
-                          strokeWidth={1.5}
-                          fill={`url(#gradient-${idx})`}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
                   </div>
                   
                   <div className="flex items-end justify-between">
-                    <span className="text-xl font-bold text-amber-400 transition-all duration-300">
+                    <span className="text-sm font-bold text-term-text num">
                       {index.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
-                    <span className={`text-sm transition-all duration-300 ${isUp ? 'text-green-500' : 'text-red-500'}`}>
+                    <span className={`text-[9px] num ${isUp ? 'text-term-green' : 'text-term-red'}`}>
                       {isUp ? '+' : ''}{index.change.toFixed(2)}
                     </span>
                   </div>
@@ -331,31 +275,26 @@ const HomePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Column 2: Recent Views with Real-time Prices */}
-        <div className="glass-card p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-orange-950/50 rounded-lg border border-orange-900/50">
-              <Clock size={20} className="text-amber-400" />
-            </div>
-            <h2 className="text-base font-semibold text-amber-400">Recent Views</h2>
-          </div>
+        {/* Column 2: Recent Views */}
+        <div className="p-2">
+          <div className="bb-header mb-2">RECENT VIEWS</div>
           
-          <div className="space-y-2">
+          <div className="space-y-1">
             {recentViews.map((view, index) => {
               const isUp = view.change >= 0;
               return (
                 <div
                   key={`${view.symbol}-${index}`}
-                  className="group flex items-center justify-between p-4 bg-black/50 border border-orange-900/50 rounded hover:border-amber-500/50 transition-all duration-300 cursor-pointer"
+                  className="flex items-center justify-between p-2 bg-term-panel border border-term-border hover:border-term-amber transition-colors cursor-pointer"
                 >
-                  <span className="font-mono font-semibold text-amber-400 text-sm">{view.symbol}</span>
+                  <span className="font-mono font-bold text-term-amber text-[10px] uppercase">{view.symbol}</span>
                   <div className="text-right">
-                    <div className={`text-sm font-bold transition-all duration-300 ${
-                      isUp ? 'text-green-500' : view.change < 0 ? 'text-red-500' : 'text-amber-400'
+                    <div className={`text-sm font-bold num ${
+                      isUp ? 'text-term-green' : view.change < 0 ? 'text-term-red' : 'text-term-text'
                     }`}>
                       {view.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
-                    <div className={`text-xs transition-all duration-300 ${isUp ? 'text-green-500' : 'text-red-500'}`}>
+                    <div className={`text-[9px] num ${isUp ? 'text-term-green' : 'text-term-red'}`}>
                       {isUp ? '+' : ''}{view.changePercent.toFixed(2)}%
                     </div>
                   </div>
@@ -366,65 +305,40 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* Column 3: News Feed */}
-        <div className="glass-card p-6 relative">
-          {/* Breaking News Alert Banner */}
-          {breakingNewsAlert && (
-            <div className="absolute -top-2 left-4 right-4 z-10 bg-red-950/90 border border-red-500 rounded-lg p-3 shadow-lg shadow-red-900/50 animate-pulse">
-              <div className="flex items-start gap-2">
-                <AlertCircle size={16} className="text-red-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <div className="text-xs font-bold text-red-400 uppercase tracking-wider mb-1">Breaking News</div>
-                  <div className="text-sm text-amber-100">{breakingNewsAlert.headline}</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-orange-950/50 rounded-lg border border-orange-900/50">
-              <Newspaper size={20} className="text-amber-400" />
-            </div>
-            <h2 className="text-base font-semibold text-amber-400">Latest News</h2>
-            <span className="ml-auto text-[10px] text-orange-700 uppercase tracking-wider">{newsItems.length} articles</span>
+        <div className="p-2">
+          <div className="bb-header mb-2 flex items-center justify-between">
+            <span>LATEST NEWS</span>
+            <span className="text-[7px] text-term-textDim">{newsItems.length} ARTICLES</span>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-1">
             {newsItems.slice(0, 10).map(item => {
-              const sourceColor = getSourceColor(item.source);
-              const sentimentBorder = item.sentiment === 'positive' ? 'border-l-green-500/50' : 
-                                     item.sentiment === 'negative' ? 'border-l-red-500/50' : 'border-l-orange-700/50';
-              
               return (
                 <div
                   key={item.id}
-                  className={`group p-4 bg-black/50 border border-orange-900/50 border-l-2 ${sentimentBorder} rounded hover:border-amber-500/50 transition-all duration-300 cursor-pointer`}
+                  className="p-2 bg-term-panel border border-term-border border-l-2 border-l-term-amber hover:border-term-amber transition-colors cursor-pointer"
                 >
                   {item.isBreaking && (
-                    <div className="mb-2">
-                      <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider bg-red-950/50 px-2 py-0.5 rounded">
-                        Breaking
+                    <div className="mb-1">
+                      <span className="text-[7px] font-bold text-term-red uppercase tracking-wider bg-term-red/10 px-1 py-0.5">
+                        BREAKING
                       </span>
                     </div>
                   )}
-                  <h3 className="text-sm text-amber-400 font-medium leading-snug mb-3 group-hover:text-amber-300 transition-colors">
+                  <h3 className="text-[10px] text-term-text leading-tight mb-2 group-hover:text-term-amber transition-colors">
                     {item.headline}
                   </h3>
                   
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs font-medium ${sourceColor}`}>
+                      <span className="text-[8px] text-term-textDim uppercase">
                         {item.source}
                       </span>
-                      <span className="text-xs text-orange-700">•</span>
-                      <span className="text-xs text-orange-700">
+                      <span className="text-[8px] text-term-muted">|</span>
+                      <span className="text-[8px] text-term-textDim">
                         {formatTimeAgo(item.publishedAt)}
                       </span>
                     </div>
-                    {item.category && (
-                      <span className="text-[10px] uppercase tracking-wider text-orange-800 bg-orange-950/30 px-2 py-0.5 rounded">
-                        {item.category}
-                      </span>
-                    )}
                   </div>
                 </div>
               );

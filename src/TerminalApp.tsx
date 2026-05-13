@@ -123,21 +123,32 @@ export default function TerminalApp() {
   }, [tabs, activeTabId, setActiveTab]);
 
   return (
-    <div className="h-screen flex flex-col bg-background text-foreground font-sans">
-      <div className="flex items-center gap-3 px-4 py-2 border-b border-border bg-[#11161f]">
-        <div className="h-2 w-2 rounded-sm bg-bb-orange" />
-        <span className="text-foreground font-semibold tracking-[0.18em] text-[11px]">
-          GAMMA <span className="text-bb-orange">TERMINAL</span>
-        </span>
-        <span className="ml-3 text-[10px] uppercase tracking-wider text-muted-foreground">
-          Professional · Markets · Intelligence
-        </span>
+    <div className="h-screen flex flex-col bg-term-black text-term-text font-mono overflow-hidden">
+      {/* Top branding bar - ultra compact */}
+      <div className="flex items-center justify-between h-5 px-2 border-b border-term-border-strong bg-term-panel">
+        <div className="flex items-center gap-2">
+          <span className="text-term-amber font-bold tracking-[0.15em] text-[9px] uppercase">
+            GAMMA TERMINAL
+          </span>
+        </div>
+        <div className="flex items-center gap-3 text-[7px] uppercase tracking-wider text-term-textDim">
+          <span className="flex items-center gap-1">
+            <span className="w-1 h-1 bg-term-green animate-pulse" />
+            LIVE
+          </span>
+        </div>
       </div>
+      
+      {/* Workspace tabs - minimal */}
       <WorkspaceTabs />
-      <div className="flex-1 min-h-0 overflow-auto relative">
+      
+      {/* Main content area */}
+      <div className="flex-1 min-h-0 overflow-hidden relative">
         <ActiveView />
         <CommandPalette />
       </div>
+      
+      {/* Status bar - dense */}
       <StatusBar />
     </div>
   );

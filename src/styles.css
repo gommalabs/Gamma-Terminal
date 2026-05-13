@@ -1,295 +1,341 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
-@custom-variant dark (&:is(.dark *));
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 /*
- * GAMMA TERMINAL — Bloomberg-style design system.
- * Dark navy background, light foreground, signature Bloomberg orange accent.
- * Sans-serif body for readability, mono only for numerics.
+ * GAMMA TERMINAL — Hyper-dense institutional trading terminal.
+ * Pure black background, maximum information density, zero whitespace.
+ * Bloomberg Terminal aesthetics for hedge funds and market makers.
+ * Keyboard-first, multi-monitor workstation design.
  */
 
 @theme {
-  --font-sans: "Inter", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "IBM Plex Mono", "Courier New", monospace;
+  --font-mono: "Roboto Mono", "IBM Plex Mono", "Courier New", monospace;
 
-  /* Signature Bloomberg accents */
-  --color-bb-orange: #fa8000;
-  --color-bb-orange-soft: #c45d00;
-  --color-bb-yellow: #ffd400;
-  --color-bb-cyan: #4fc3f7;
-  --color-bb-green: #19c37d;
-  --color-bb-red: #ff4d4f;
-  --color-bb-magenta: #d946ef;
-
-  /* Surfaces (deep navy-black, slightly warm) */
-  --color-bb-bg: #0b0f17;
-  --color-bb-bg-2: #11161f;
-  --color-bb-bg-3: #161c27;
-  --color-bb-row: #131923;
-  --color-bb-row-alt: #0f141d;
-  --color-bb-border: #1f2733;
-  --color-bb-border-strong: #2a3340;
-  --color-bb-text: #e7eaf0;
-  --color-bb-text-dim: #8a93a3;
-  --color-bb-text-mute: #5b6473;
-
-  /* Override amber/orange so legacy `text-amber-400` etc. land on Bloomberg orange */
-  --color-amber-400: #fa8000;
-  --color-amber-500: #ffa040;
-  --color-orange-600: #fa8000;
-  --color-orange-800: #2a3340;
-  --color-orange-900: #1f2733;
-  --color-orange-950: #11161f;
+  /* Pure black institutional palette */
+  --color-term-black: #000000;
+  --color-term-bg: #000000;
+  --color-term-panel: #0a0a0a;
+  --color-term-panel2: #111111;
+  --color-term-border: #1a1a1a;
+  --color-term-border-strong: #2a2a2a;
+  
+  /* Signature Bloomberg amber/orange */
+  --color-term-amber: #ff9500;
+  --color-term-amberBright: #ffb000;
+  --color-term-amberDim: #cc7700;
+  --color-term-amberSubtle: rgba(255, 149, 0, 0.08);
+  --color-term-yellow: #ffd700;
+  
+  /* Market colors */
+  --color-term-green: #00ff41;
+  --color-term-greenDim: #00cc33;
+  --color-term-red: #ff073a;
+  --color-term-redDim: #cc052e;
+  --color-term-cyan: #00ffff;
+  --color-term-magenta: #ff00ff;
+  
+  /* Text hierarchy */
+  --color-term-text: #e0e0e0;
+  --color-term-textDim: #888888;
+  --color-term-muted: #555555;
+  --color-term-heading: #ffffff;
 }
 
 @theme inline {
-  --radius-sm: 2px;
-  --radius-md: 3px;
-  --radius-lg: 4px;
-  --radius-xl: 6px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
 
-  --color-background: var(--color-bb-bg);
-  --color-foreground: var(--color-bb-text);
-  --color-card: var(--color-bb-bg-2);
-  --color-card-foreground: var(--color-bb-text);
-  --color-popover: var(--color-bb-bg-2);
-  --color-popover-foreground: var(--color-bb-text);
-  --color-primary: var(--color-bb-orange);
-  --color-primary-foreground: #0b0f17;
-  --color-secondary: var(--color-bb-bg-3);
-  --color-secondary-foreground: var(--color-bb-text);
-  --color-muted: var(--color-bb-bg-3);
-  --color-muted-foreground: var(--color-bb-text-dim);
-  --color-accent: var(--color-bb-bg-3);
-  --color-accent-foreground: var(--color-bb-text);
-  --color-destructive: var(--color-bb-red);
+  --color-background: var(--color-term-black);
+  --color-foreground: var(--color-term-text);
+  --color-card: var(--color-term-panel);
+  --color-card-foreground: var(--color-term-text);
+  --color-popover: var(--color-term-panel);
+  --color-popover-foreground: var(--color-term-text);
+  --color-primary: var(--color-term-amber);
+  --color-primary-foreground: #000000;
+  --color-secondary: var(--color-term-panel2);
+  --color-secondary-foreground: var(--color-term-text);
+  --color-muted: var(--color-term-panel2);
+  --color-muted-foreground: var(--color-term-textDim);
+  --color-accent: var(--color-term-panel2);
+  --color-accent-foreground: var(--color-term-text);
+  --color-destructive: var(--color-term-red);
   --color-destructive-foreground: #ffffff;
-  --color-border: var(--color-bb-border);
-  --color-input: var(--color-bb-border);
-  --color-ring: var(--color-bb-orange);
+  --color-border: var(--color-term-border);
+  --color-input: var(--color-term-border-strong);
+  --color-ring: var(--color-term-amber);
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
+  * { border-color: var(--color-term-border); }
 
-  html, body { height: 100%; }
+  html, body { height: 100%; overflow: hidden; }
 
   body {
-    background-color: var(--color-bb-bg);
-    color: var(--color-bb-text);
-    font-family: var(--font-sans);
-    font-size: 13px;
-    line-height: 1.4;
-    -webkit-font-smoothing: antialiased;
-    font-feature-settings: "tnum" 1, "ss01" 1;
+    background-color: var(--color-term-black);
+    color: var(--color-term-text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.3;
+    -webkit-font-smoothing: none;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: 0.01em;
   }
 
   :focus-visible {
     outline: none;
-    box-shadow: 0 0 0 1px var(--color-bb-orange);
+    box-shadow: 0 0 0 1px var(--color-term-amber);
   }
-  ::selection { background: rgba(250, 128, 0, 0.35); color: #fff; }
+  ::selection { background: rgba(255, 149, 0, 0.3); color: #fff; }
 }
 
 @layer components {
-  /* Panels */
-  .bb-panel {
-    background-color: var(--color-bb-bg-2);
-    border: 1px solid var(--color-bb-border);
+  /* Ultra-dense panels */
+  .bb-panel, .panel {
+    background-color: var(--color-term-panel);
+    border: 1px solid var(--color-term-border);
   }
-  .bb-header {
-    background-color: var(--color-bb-bg-3);
-    border-bottom: 1px solid var(--color-bb-border-strong);
-    padding: 6px 10px;
-    color: var(--color-bb-orange);
-    font-size: 10px;
+  
+  .bb-header, .panel-header {
+    background-color: var(--color-term-panel2);
+    border-bottom: 1px solid var(--color-term-border-strong);
+    padding: 3px 8px;
+    color: var(--color-term-amber);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .bb-cell { padding: 2px 6px; font-size: 10px; }
+
+  .bb-label, .sub-header {
+    color: var(--color-term-textDim);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
     font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
   }
-
-  .bb-cell { padding: 4px 8px; font-size: 12px; }
-
-  .bb-label {
-    color: var(--color-bb-text-dim);
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    font-weight: 500;
-  }
-  .bb-value {
-    color: var(--color-bb-text);
+  
+  .bb-value, .num {
+    color: var(--color-term-text);
     font-family: var(--font-mono);
     font-weight: 500;
     font-variant-numeric: tabular-nums;
   }
+  
   .bb-number {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     text-align: right;
   }
-  .bb-positive { color: var(--color-bb-green); }
-  .bb-negative { color: var(--color-bb-red); }
+  
+  .bb-positive, .text-term-green { color: var(--color-term-green); }
+  .bb-negative, .text-term-red { color: var(--color-term-red); }
 
-  /* Buttons */
+  /* Dense buttons */
   .bb-button {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 10px;
-    background-color: var(--color-bb-bg-3);
-    border: 1px solid var(--color-bb-border-strong);
-    color: var(--color-bb-text);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.04em;
+    gap: 4px;
+    padding: 2px 8px;
+    background-color: var(--color-term-panel2);
+    border: 1px solid var(--color-term-border-strong);
+    color: var(--color-term-text);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    transition: background 120ms, border-color 120ms;
+    transition: none;
   }
   .bb-button:hover {
-    background-color: #1c2331;
-    border-color: var(--color-bb-orange);
-    color: var(--color-bb-orange);
+    background-color: #1a1a1a;
+    border-color: var(--color-term-amber);
+    color: var(--color-term-amber);
   }
 
   .bb-input {
-    background-color: var(--color-bb-bg);
-    border: 1px solid var(--color-bb-border-strong);
-    color: var(--color-bb-text);
-    padding: 6px 10px;
-    font-size: 12px;
+    background-color: var(--color-term-black);
+    border: 1px solid var(--color-term-border-strong);
+    color: var(--color-term-text);
+    padding: 3px 6px;
+    font-size: 10px;
     font-family: var(--font-mono);
   }
-  .bb-input:focus { border-color: var(--color-bb-orange); outline: none; }
+  .bb-input:focus { border-color: var(--color-term-amber); outline: none; }
 
-  /* Tables — dense, info-rich */
-  .bb-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+  /* Ultra-dense tables */
+  .bb-table { width: 100%; font-size: 10px; border-collapse: collapse; }
   .bb-table th {
     text-align: left;
-    padding: 6px 10px;
-    color: var(--color-bb-text-dim);
-    background-color: var(--color-bb-bg-3);
+    padding: 3px 6px;
+    color: var(--color-term-textDim);
+    background-color: var(--color-term-panel2);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-size: 10px;
-    font-weight: 600;
-    border-bottom: 1px solid var(--color-bb-border-strong);
+    letter-spacing: 0.1em;
+    font-size: 8px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--color-term-border-strong);
     position: sticky;
     top: 0;
   }
   .bb-table td {
-    padding: 5px 10px;
-    border-bottom: 1px solid var(--color-bb-border);
-    color: var(--color-bb-text);
+    padding: 2px 6px;
+    border-bottom: 1px solid var(--color-term-border);
+    color: var(--color-term-text);
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
-  .bb-table tbody tr:nth-child(even) td { background-color: var(--color-bb-row-alt); }
-  .bb-table tbody tr:hover td { background-color: #1a2230; color: var(--color-bb-orange); }
+  .bb-table tbody tr:nth-child(even) td { background-color: rgba(255,255,255,0.02); }
+  .bb-table tbody tr:hover td { background-color: rgba(255, 149, 0, 0.08); color: var(--color-term-amber); }
 
-  /* Status indicator */
+  /* Live status indicator with blink */
   .bb-status-live {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 2px 8px;
-    background-color: rgba(25, 195, 125, 0.1);
-    border: 1px solid rgba(25, 195, 125, 0.4);
-    color: var(--color-bb-green);
-    font-size: 10px;
+    gap: 4px;
+    padding: 1px 6px;
+    background-color: rgba(0, 255, 65, 0.1);
+    border: 1px solid rgba(0, 255, 65, 0.4);
+    color: var(--color-term-green);
+    font-size: 8px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.1em;
   }
   .bb-status-dot {
-    width: 6px; height: 6px;
-    background-color: var(--color-bb-green);
-    border-radius: 9999px;
-    animation: bb-pulse 2s ease-in-out infinite;
+    width: 5px; height: 5px;
+    background-color: var(--color-term-green);
+    animation: term-blink 1s step-end infinite;
   }
-  @keyframes bb-pulse {
-    0%,100% { opacity: 1; }
-    50% { opacity: 0.4; }
+  @keyframes term-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
   }
 
-  /* Scrollbar */
-  .bb-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
-  .bb-scroll::-webkit-scrollbar-track { background: var(--color-bb-bg); }
-  .bb-scroll::-webkit-scrollbar-thumb { background: var(--color-bb-border-strong); border-radius: 4px; }
-  .bb-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-bb-orange); }
-  *::-webkit-scrollbar { width: 8px; height: 8px; }
-  *::-webkit-scrollbar-track { background: var(--color-bb-bg); }
-  *::-webkit-scrollbar-thumb { background: var(--color-bb-border-strong); border-radius: 4px; }
+  /* Scrollbar - minimal */
+  .bb-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+  .bb-scroll::-webkit-scrollbar-track { background: var(--color-term-black); }
+  .bb-scroll::-webkit-scrollbar-thumb { background: var(--color-term-border-strong); }
+  .bb-scroll::-webkit-scrollbar-thumb:hover { background: var(--color-term-amber); }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-track { background: var(--color-term-black); }
+  *::-webkit-scrollbar-thumb { background: var(--color-term-border-strong); }
 
-  /* Workspace tabs */
+  /* Workspace tabs - ultra compact */
   .bb-tab {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
+    gap: 4px;
+    padding: 3px 10px;
     background-color: transparent;
-    border-right: 1px solid var(--color-bb-border);
-    color: var(--color-bb-text-dim);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.06em;
+    border-right: 1px solid var(--color-term-border);
+    color: var(--color-term-textDim);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     cursor: pointer;
-    transition: color 120ms, background 120ms;
+    transition: none;
   }
-  .bb-tab:hover { color: var(--color-bb-text); background-color: var(--color-bb-bg-3); }
+  .bb-tab:hover { color: var(--color-term-text); background-color: var(--color-term-panel2); }
   .bb-tab-active {
-    background-color: var(--color-bb-bg-2);
-    color: var(--color-bb-orange);
-    border-bottom: 2px solid var(--color-bb-orange);
+    background-color: var(--color-term-panel);
+    color: var(--color-term-amber);
+    border-top: 2px solid var(--color-term-amber);
   }
 
-  /* Command bar */
+  /* Command bar - institutional density */
   .bb-command-bar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    background-color: var(--color-bb-bg-2);
-    border-bottom: 1px solid var(--color-bb-border-strong);
+    gap: 6px;
+    padding: 3px 8px;
+    background-color: var(--color-term-panel);
+    border-bottom: 1px solid var(--color-term-border-strong);
   }
   .bb-command-input {
     flex: 1;
     background: transparent;
-    color: var(--color-bb-text);
+    color: var(--color-term-text);
     font-family: var(--font-mono);
-    font-size: 13px;
-    letter-spacing: 0.04em;
+    font-size: 11px;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
     outline: none;
     border: none;
   }
-  .bb-command-input::placeholder { color: var(--color-bb-text-mute); }
+  .bb-command-input::placeholder { color: var(--color-term-muted); }
 
-  /* Function key chip — Bloomberg yellow keycap feel */
+  /* Function key chip - Bloomberg yellow keycap */
   .bb-fkey {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 2px 6px;
-    background-color: var(--color-bb-bg-3);
-    border: 1px solid var(--color-bb-border-strong);
-    color: var(--color-bb-yellow);
+    padding: 1px 5px;
+    background-color: var(--color-term-panel2);
+    border: 1px solid var(--color-term-border-strong);
+    color: var(--color-term-yellow);
     font-family: var(--font-mono);
-    font-size: 10px;
+    font-size: 8px;
     font-weight: 700;
-    min-width: 28px;
-    border-radius: 2px;
+    min-width: 24px;
   }
+  
+  /* Market ticker ribbon */
+  .market-ticker {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 2px 8px;
+    background-color: var(--color-term-black);
+    border-bottom: 1px solid var(--color-term-border);
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 9px;
+  }
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .ticker-symbol {
+    color: var(--color-term-amber);
+    font-weight: 700;
+  }
+  .ticker-price {
+    color: var(--color-term-text);
+  }
+  .ticker-change.positive { color: var(--color-term-green); }
+  .ticker-change.negative { color: var(--color-term-red); }
+}
+
+/* Flashing update animation */
+@keyframes flash-update {
+  0% { background-color: rgba(255, 149, 0, 0.3); }
+  100% { background-color: transparent; }
+}
+.flash-update {
+  animation: flash-update 0.5s ease-out;
+}
+
+/* Blinking cursor for live data */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.blink {
+  animation: blink-cursor 1s step-end infinite;
 }
 
 /* Remove CRT grid — keep clean */
-.bg-terminal-grid { background: var(--color-bb-bg); }
+.bg-terminal-grid { background: var(--color-term-black); }
 
 @keyframes slide-in {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
-.animate-slide-in { animation: slide-in 0.3s ease-out; }
+.animate-slide-in { animation: slide-in 0.2s ease-out; }

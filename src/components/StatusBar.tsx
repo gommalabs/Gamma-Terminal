@@ -25,22 +25,25 @@ export function StatusBar() {
   }, []);
 
   return (
-    <div className="h-6 px-3 flex items-center justify-between border-t border-term-border bg-term-panel2 text-[10px] uppercase tracking-[0.18em] text-term-muted">
-      <div className="flex items-center gap-5">
-        <span className="flex items-center gap-2">
+    <div className="h-5 px-2 flex items-center justify-between border-t border-term-border-strong bg-term-black text-[7px] uppercase tracking-wider text-term-textDim">
+      <div className="flex items-center gap-3">
+        {/* Connection status */}
+        <span className="flex items-center gap-1">
           <span className={
-            apiOk == null ? "w-1.5 h-1.5 bg-term-muted"
-            : apiOk ? "w-1.5 h-1.5 bg-term-green shadow-[0_0_6px_rgba(34,238,34,0.6)]"
-            : "w-1.5 h-1.5 bg-term-red shadow-[0_0_6px_rgba(255,59,59,0.6)]"
+            apiOk == null ? "w-1 h-1 bg-term-muted"
+            : apiOk ? "w-1 h-1 bg-term-green animate-pulse"
+            : "w-1 h-1 bg-term-red animate-pulse"
           } />
-          <span>OPENBB {apiOk == null ? "…" : apiOk ? "LIVE" : "DOWN"}</span>
+          <span>{apiOk == null ? "INIT" : apiOk ? "LIVE" : "OFFLN"}</span>
         </span>
-        <span>PROVIDER <span className="text-term-amber ml-1">YFINANCE</span></span>
-        <span>TABS <span className="text-term-text ml-1 num">{tabs.length}</span></span>
+        
+        {/* Tabs count */}
+        <span>TABS:<span className="text-term-text ml-0.5 num">{tabs.length}</span></span>
       </div>
-      <div className="flex items-center gap-5 num">
-        <span>{now.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" })}</span>
-        <span className="text-term-amber">{now.toLocaleTimeString()}</span>
+      
+      <div className="flex items-center gap-3 num">
+        <span>{now.toLocaleDateString(undefined, { month: "short", day: "2-digit" }).toUpperCase()}</span>
+        <span className="text-term-amber font-bold">{now.toLocaleTimeString()}</span>
       </div>
     </div>
   );
